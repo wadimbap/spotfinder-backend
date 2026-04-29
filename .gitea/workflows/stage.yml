@@ -1,0 +1,84 @@
+name: stage-pipeline
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  lint:
+    runs-on: stage-host
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Run Spotless and Checkstyle
+        run: ./gradlew spotlessCheck checkstyleMain checkstyleTest --no-daemon
+
+  build:
+    runs-on: stage-host
+    needs: lint
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Compile classes
+        run: ./gradlew classes --no-daemon
+
+  test:
+    runs-on: stage-host
+    needs: build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Run tests
+        run: ./gradlew test --no-daemon
+
+  package:
+    runs-on: stage-host
+    needs: test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Build bootJar
+        run: ./gradlew bootJar --no-daemon
+
+  deploy-stage:
+    runs-on: stage-host
+    needs: package
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Build JAR
+        run: ./gradlew bootJar -x test --no-daemon
+
+      - name: Build Docker image
+        run: docker build -t spotfinder-backend:stage .
+
+      - name: Deploy backend to stage
+        run: |
+          cd /opt/apps/spotfinder/stage/backend
+          docker compose up -d
+
+      - name: Check stage health
+        run: |
+          docker run --rm --network spotfinder-stage-net curlimages/curl:8.10.1 \
+            -f http://spotfinder-stage-backend:8080/actuator/health
