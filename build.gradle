@@ -2,6 +2,33 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '4.0.6'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'com.diffplug.spotless' version '7.0.0'
+    id 'checkstyle'
+}
+
+spotless {
+    java {
+        target 'src/**/*.java'
+
+        removeUnusedImports()
+        trimTrailingWhitespace()
+        endWithNewline()
+
+        importOrder('java', 'javax', 'jakarta', 'org', 'com', '')
+    }
+}
+
+checkstyle {
+    toolVersion = '10.20.1'
+    configFile = file("${rootDir}/config/checkstyle/checkstyle.xml")
+    ignoreFailures = false
+}
+
+tasks.withType(Checkstyle).configureEach {
+    reports {
+        xml.required = true
+        html.required = true
+    }
 }
 
 group = 'com.spotfinder'
