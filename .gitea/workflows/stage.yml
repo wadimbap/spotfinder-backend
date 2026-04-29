@@ -93,5 +93,17 @@ jobs:
 
       - name: Check stage health
         run: |
-          docker run --rm --network spotfinder-stage-net curlimages/curl:8.10.1 \
-            -f http://spotfinder-stage-backend:8080/actuator/health
+          for i in $(seq 1 30); do
+            if docker run --rm --network spotfinder-stage-net curlimages/curl:8.10.1 \
+              -f http://spotfinder-stage-backend:8080/actuator/health; then
+              echo "Stage backend is healthy"
+              exit 0
+            fi
+
+            echo "Waiting for backend... attempt $i"
+            sleep 5
+          done
+
+          echo "Stage backend healthcheck failed"
+          docker logs spotfinder-stage-backend --tail 150
+          exit 1
