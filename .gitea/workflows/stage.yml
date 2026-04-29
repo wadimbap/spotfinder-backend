@@ -10,7 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        run: |
+          git clone http://gitea:3000/admin/spotfinder-backend.git .
+          git checkout ${{ gitea.sha }}
 
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
@@ -23,7 +25,9 @@ jobs:
     needs: lint
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        run: |
+          git clone http://gitea:3000/admin/spotfinder-backend.git .
+          git checkout ${{ gitea.sha }}
 
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
@@ -36,7 +40,9 @@ jobs:
     needs: build
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        run: |
+          git clone http://gitea:3000/admin/spotfinder-backend.git .
+          git checkout ${{ gitea.sha }}
 
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
@@ -49,7 +55,9 @@ jobs:
     needs: test
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        run: |
+          git clone http://gitea:3000/admin/spotfinder-backend.git .
+          git checkout ${{ gitea.sha }}
 
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
@@ -62,7 +70,9 @@ jobs:
     needs: package
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        run: |
+          git clone http://gitea:3000/admin/spotfinder-backend.git .
+          git checkout ${{ gitea.sha }}
 
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
