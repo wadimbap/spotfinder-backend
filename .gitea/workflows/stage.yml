@@ -85,8 +85,11 @@ jobs:
 
       - name: Deploy backend to stage
         run: |
-          cd /opt/apps/spotfinder/stage/backend
-          docker compose up -d
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v /opt/apps/spotfinder/stage/backend:/work \
+            -w /work \
+            docker/compose:1.29.2 up -d
 
       - name: Check stage health
         run: |
