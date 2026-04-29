@@ -3,25 +3,22 @@ spring:
     name: spotfinder-backend
 
   datasource:
-    url: jdbc:postgresql://localhost:5433/spotfinder
-    username: admin
-    password: admin
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/spotfinder}
+    username: ${SPRING_DATASOURCE_USERNAME:spotfinder}
+    password: ${SPRING_DATASOURCE_PASSWORD:spotfinder}
     driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
       ddl-auto: validate
     open-in-view: false
-    properties:
-      hibernate:
-        format_sql: true
 
   flyway:
     enabled: true
     locations: classpath:db/migration
 
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
 
 management:
   endpoints:
