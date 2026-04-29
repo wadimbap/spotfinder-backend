@@ -7,7 +7,7 @@ on:
 
 jobs:
   lint:
-    runs-on: stage-host
+    runs-on: runs-on
     steps:
       - name: Checkout
         uses: actions/checkout@v4
