@@ -9,12 +9,10 @@ plugins {
 spotless {
     java {
         target 'src/**/*.java'
-
         removeUnusedImports()
+        importOrder('static', '')
         trimTrailingWhitespace()
         endWithNewline()
-
-        importOrder('java', 'javax', 'jakarta', 'org', 'com', '')
     }
 }
 

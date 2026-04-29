@@ -18,13 +18,6 @@
 
         <module name="RedundantImport"/>
 
-        <module name="ImportOrder">
-            <property name="option" value="top"/>
-            <property name="ordered" value="false"/>
-            <property name="separated" value="false"/>
-            <property name="sortStaticImportsAlphabetically" value="true"/>
-        </module>
-
         <module name="NeedBraces">
             <property name="tokens" value="LITERAL_IF,LITERAL_ELSE,LITERAL_FOR,LITERAL_WHILE,LITERAL_DO"/>
         </module>
