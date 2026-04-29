@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: Checkout
         run: |
-          git clone http://172.20.0.5:3000/admin/spotfinder-backend.git .
+          git clone http://gitea:3000/admin/spotfinder-backend.git .
           git checkout ${{ gitea.sha }}
 
       - name: Make Gradle wrapper executable
@@ -26,7 +26,7 @@ jobs:
     steps:
       - name: Checkout
         run: |
-          git clone http://172.20.0.5:3000/admin/spotfinder-backend.git .
+          git clone http://gitea:3000/admin/spotfinder-backend.git .
           git checkout ${{ gitea.sha }}
 
       - name: Make Gradle wrapper executable
@@ -41,7 +41,7 @@ jobs:
     steps:
       - name: Checkout
         run: |
-          git clone http://172.20.0.5:3000/admin/spotfinder-backend.git .
+          git clone http://gitea:3000/admin/spotfinder-backend.git .
           git checkout ${{ gitea.sha }}
 
       - name: Make Gradle wrapper executable
@@ -56,7 +56,7 @@ jobs:
     steps:
       - name: Checkout
         run: |
-          git clone http://172.20.0.5:3000/admin/spotfinder-backend.git .
+          git clone http://gitea:3000/admin/spotfinder-backend.git .
           git checkout ${{ gitea.sha }}
 
       - name: Make Gradle wrapper executable
@@ -71,7 +71,7 @@ jobs:
     steps:
       - name: Checkout
         run: |
-          git clone http://172.20.0.5:3000/admin/spotfinder-backend.git .
+          git clone http://gitea:3000/admin/spotfinder-backend.git .
           git checkout ${{ gitea.sha }}
 
       - name: Make Gradle wrapper executable
