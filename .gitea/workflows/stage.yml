@@ -85,11 +85,13 @@ jobs:
 
       - name: Deploy backend to stage
         run: |
+          docker rm -f spotfinder-stage-backend || true
+
           docker run --rm \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -v /opt/apps/spotfinder/stage/backend:/work \
             -w /work \
-            docker/compose:1.29.2 up -d
+            docker:27-cli sh -c "docker compose version && docker compose up -d --remove-orphans"
 
       - name: Check stage health
         run: |
