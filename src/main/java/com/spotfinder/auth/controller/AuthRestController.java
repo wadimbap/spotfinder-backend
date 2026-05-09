@@ -1,8 +1,8 @@
 package com.spotfinder.auth.controller;
 
+import com.spotfinder.auth.dto.AuthResponse;
 import com.spotfinder.auth.dto.RegisterRequest;
 import com.spotfinder.auth.service.RegistrationService;
-import com.spotfinder.user.dto.UserResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,9 +20,8 @@ public class AuthRestController {
   private final RegistrationService registrationService;
 
   @PostMapping("/register")
-  public ResponseEntity<UserResponse> register(
-      @Valid @RequestBody RegisterRequest registerRequest) {
-    UserResponse userResponse = registrationService.register(registerRequest);
-    return ResponseEntity.status(HttpStatus.CREATED).body(userResponse);
+  public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest registerRequest) {
+    AuthResponse authResponse = registrationService.register(registerRequest);
+    return ResponseEntity.status(HttpStatus.CREATED).body(authResponse);
   }
 }

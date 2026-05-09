@@ -25,3 +25,8 @@ management:
     web:
       exposure:
         include: health,info
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:change-me-change-me-change-me-change-me-change-me}
+    expiration-minutes: ${JWT_EXPIRATION_MINUTES:60}

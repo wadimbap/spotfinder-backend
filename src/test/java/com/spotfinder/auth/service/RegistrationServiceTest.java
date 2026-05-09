@@ -8,7 +8,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.spotfinder.auth.dto.AuthResponse;
 import com.spotfinder.auth.dto.RegisterRequest;
+import com.spotfinder.auth.security.JwtService;
 import com.spotfinder.auth.validation.RegistrationValidator;
 import com.spotfinder.common.exception.EmailAlreadyExistsException;
 import com.spotfinder.common.exception.PasswordConfirmationMismatchException;
@@ -32,36 +34,51 @@ class RegistrationServiceTest {
 
   private static final String RAW_PASSWORD = "password123";
   private static final String ENCODED_PASSWORD = "$2a$10$hashed-password";
+  private static final String ACCESS_TOKEN = "access-token";
 
-  @Mock UserRepository userRepository;
+  @Mock
+  UserRepository userRepository;
 
-  @Mock UserMapper userMapper;
+  @Mock
+  UserMapper userMapper;
 
-  @Mock RegistrationValidator registrationValidator;
+  @Mock
+  RegistrationValidator registrationValidator;
 
-  @Mock PasswordEncoder passwordEncoder;
+  @Mock
+  PasswordEncoder passwordEncoder;
+
+  @Mock
+  JwtService jwtService;
 
   RegistrationService registrationService;
 
   @BeforeEach
   void setUp() {
-    registrationService =
-        new RegistrationService(userRepository, userMapper, registrationValidator, passwordEncoder);
+    registrationService = new RegistrationService(
+            userRepository,
+            userMapper,
+            registrationValidator,
+            jwtService,
+            passwordEncoder
+    );
   }
 
   @Test
-  void register_shouldCreateUser() {
+  void register_shouldCreateUserAndReturnAuthResponse() {
     RegisterRequest request = validRegisterRequest();
-    UserResponse expectedResponse = userResponse();
+    UserResponse userResponse = userResponse();
 
     when(passwordEncoder.encode(RAW_PASSWORD)).thenReturn(ENCODED_PASSWORD);
-    when(userRepository.save(any(UserEntity.class)))
-        .thenAnswer(invocation -> invocation.getArgument(0));
-    when(userMapper.toResponse(any(UserEntity.class))).thenReturn(expectedResponse);
+    when(userRepository.save(any(UserEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    when(userMapper.toResponse(any(UserEntity.class))).thenReturn(userResponse);
+    when(jwtService.generateAccessToken(any(), any(), any())).thenReturn(ACCESS_TOKEN);
 
-    UserResponse actualResponse = registrationService.register(request);
+    AuthResponse actualResponse = registrationService.register(request);
 
-    assertThat(actualResponse).isEqualTo(expectedResponse);
+    assertThat(actualResponse.accessToken()).isEqualTo(ACCESS_TOKEN);
+    assertThat(actualResponse.tokenType()).isEqualTo("Bearer");
+    assertThat(actualResponse.user()).isEqualTo(userResponse);
 
     ArgumentCaptor<UserEntity> userCaptor = ArgumentCaptor.forClass(UserEntity.class);
     verify(userRepository).save(userCaptor.capture());
@@ -77,6 +94,12 @@ class RegistrationServiceTest {
 
     verify(registrationValidator).validate(request);
     verify(passwordEncoder).encode(RAW_PASSWORD);
+    verify(userMapper).toResponse(userToSave);
+    verify(jwtService).generateAccessToken(
+            userToSave.getId(),
+            userToSave.getEmail(),
+            userToSave.getRole().name()
+    );
   }
 
   @Test
@@ -84,9 +107,9 @@ class RegistrationServiceTest {
     RegisterRequest request = validRegisterRequest();
 
     when(passwordEncoder.encode(RAW_PASSWORD)).thenReturn(ENCODED_PASSWORD);
-    when(userRepository.save(any(UserEntity.class)))
-        .thenAnswer(invocation -> invocation.getArgument(0));
+    when(userRepository.save(any(UserEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
     when(userMapper.toResponse(any(UserEntity.class))).thenReturn(userResponse());
+    when(jwtService.generateAccessToken(any(), any(), any())).thenReturn(ACCESS_TOKEN);
 
     registrationService.register(request);
 
@@ -99,12 +122,12 @@ class RegistrationServiceTest {
   @Test
   void register_shouldTrimDisplayName() {
     RegisterRequest request =
-        new RegisterRequest("user@example.com", "  user_name  ", RAW_PASSWORD, RAW_PASSWORD);
+            new RegisterRequest("user@example.com", "  user_name  ", RAW_PASSWORD, RAW_PASSWORD);
 
     when(passwordEncoder.encode(RAW_PASSWORD)).thenReturn(ENCODED_PASSWORD);
-    when(userRepository.save(any(UserEntity.class)))
-        .thenAnswer(invocation -> invocation.getArgument(0));
+    when(userRepository.save(any(UserEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
     when(userMapper.toResponse(any(UserEntity.class))).thenReturn(userResponse());
+    when(jwtService.generateAccessToken(any(), any(), any())).thenReturn(ACCESS_TOKEN);
 
     registrationService.register(request);
 
@@ -119,50 +142,53 @@ class RegistrationServiceTest {
     RegisterRequest request = validRegisterRequest();
 
     doThrow(new EmailAlreadyExistsException("user@example.com"))
-        .when(registrationValidator)
-        .validate(request);
+            .when(registrationValidator)
+            .validate(request);
 
     assertThatThrownBy(() -> registrationService.register(request))
-        .isInstanceOf(EmailAlreadyExistsException.class)
-        .hasMessageContaining("user@example.com");
+            .isInstanceOf(EmailAlreadyExistsException.class)
+            .hasMessageContaining("user@example.com");
 
     verify(userRepository, never()).save(any(UserEntity.class));
     verify(passwordEncoder, never()).encode(any());
     verify(userMapper, never()).toResponse(any(UserEntity.class));
+    verify(jwtService, never()).generateAccessToken(any(), any(), any());
   }
 
   @Test
   void register_shouldThrowExceptionWhenPasswordConfirmationDoesNotMatch() {
     RegisterRequest request =
-        new RegisterRequest("user@example.com", "user_name", RAW_PASSWORD, "different-password");
+            new RegisterRequest("user@example.com", "user_name", RAW_PASSWORD, "different-password");
 
-    doThrow(
-            new PasswordConfirmationMismatchException(
-                "Password confirmation does not match password"))
-        .when(registrationValidator)
-        .validate(request);
+    doThrow(new PasswordConfirmationMismatchException("Password should match"))
+            .when(registrationValidator)
+            .validate(request);
 
     assertThatThrownBy(() -> registrationService.register(request))
-        .isInstanceOf(PasswordConfirmationMismatchException.class);
+            .isInstanceOf(PasswordConfirmationMismatchException.class);
 
     verify(userRepository, never()).save(any(UserEntity.class));
     verify(passwordEncoder, never()).encode(any());
     verify(userMapper, never()).toResponse(any(UserEntity.class));
+    verify(jwtService, never()).generateAccessToken(any(), any(), any());
   }
 
   @Test
-  void register_shouldReturnMappedUserResponse() {
+  void register_shouldReturnMappedUserInsideAuthResponse() {
     RegisterRequest request = validRegisterRequest();
-    UserResponse expectedResponse = userResponse();
+    UserResponse expectedUserResponse = userResponse();
 
     when(passwordEncoder.encode(RAW_PASSWORD)).thenReturn(ENCODED_PASSWORD);
-    when(userRepository.save(any(UserEntity.class)))
-        .thenAnswer(invocation -> invocation.getArgument(0));
-    when(userMapper.toResponse(any(UserEntity.class))).thenReturn(expectedResponse);
+    when(userRepository.save(any(UserEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    when(userMapper.toResponse(any(UserEntity.class))).thenReturn(expectedUserResponse);
+    when(jwtService.generateAccessToken(any(), any(), any())).thenReturn(ACCESS_TOKEN);
 
-    UserResponse actualResponse = registrationService.register(request);
+    AuthResponse actualResponse = registrationService.register(request);
 
-    assertThat(actualResponse).isEqualTo(expectedResponse);
+    assertThat(actualResponse.user()).isEqualTo(expectedUserResponse);
+    assertThat(actualResponse.accessToken()).isEqualTo(ACCESS_TOKEN);
+    assertThat(actualResponse.tokenType()).isEqualTo("Bearer");
+
     verify(userMapper).toResponse(any(UserEntity.class));
   }
 
@@ -172,6 +198,12 @@ class RegistrationServiceTest {
 
   private UserResponse userResponse() {
     return new UserResponse(
-        UUID.randomUUID(), "user@example.com", "user_name", UserRole.USER, true, Instant.now());
+            UUID.randomUUID(),
+            "user@example.com",
+            "user_name",
+            UserRole.USER,
+            true,
+            Instant.now()
+    );
   }
 }

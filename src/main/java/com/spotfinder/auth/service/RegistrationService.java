@@ -1,13 +1,14 @@
 package com.spotfinder.auth.service;
 
+import com.spotfinder.auth.dto.AuthResponse;
 import com.spotfinder.auth.dto.RegisterRequest;
+import com.spotfinder.auth.security.JwtService;
 import com.spotfinder.auth.validation.RegistrationValidator;
 import com.spotfinder.user.dto.UserMapper;
 import com.spotfinder.user.dto.UserResponse;
 import com.spotfinder.user.entity.UserEntity;
 import com.spotfinder.user.entity.UserRole;
 import com.spotfinder.user.repository.UserRepository;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -19,18 +20,33 @@ public class RegistrationService {
   private final UserRepository userRepository;
   private final UserMapper userMapper;
   private final RegistrationValidator registrationValidator;
+  private final JwtService jwtService;
   private final PasswordEncoder passwordEncoder;
 
-  public UserResponse register(@Valid RegisterRequest registerRequest) {
+  public AuthResponse register(RegisterRequest registerRequest) {
     registrationValidator.validate(registerRequest);
-    UserEntity entity = new UserEntity();
-    entity.setEmail(registerRequest.email());
-    entity.setDisplayName(registerRequest.name());
-    entity.setPasswordHash(passwordEncoder.encode(registerRequest.password()));
-    entity.setRole(UserRole.USER);
-    entity.setEnabled(true);
 
-    userRepository.save(entity);
-    return userMapper.toResponse(entity);
+    UserEntity user = new UserEntity();
+    user.setEmail(registerRequest.email().trim().toLowerCase());
+    user.setDisplayName(registerRequest.name());
+    user.setPasswordHash(passwordEncoder.encode(registerRequest.password()));
+    user.setRole(UserRole.USER);
+    user.setEnabled(true);
+
+    UserEntity savedUser = userRepository.save(user);
+
+    String accessToken = jwtService.generateAccessToken(
+            savedUser.getId(),
+            savedUser.getEmail(),
+            savedUser.getRole().name()
+    );
+
+    UserResponse userResponse = userMapper.toResponse(savedUser);
+
+    return new AuthResponse(
+            accessToken,
+            "Bearer",
+            userResponse
+    );
   }
 }
