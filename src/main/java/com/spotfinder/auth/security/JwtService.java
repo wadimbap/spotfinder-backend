@@ -1,5 +1,7 @@
 package com.spotfinder.auth.security;
 
+import com.spotfinder.user.entity.UserRole;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import java.nio.charset.StandardCharsets;
@@ -35,5 +37,19 @@ public class JwtService {
                 .expiration(Date.from(expiresAt))
                 .signWith(secretKey)
                 .compact();
+    }
+
+    public UserPrincipal parseAccessToken(String accessToken) {
+        Claims claims = Jwts.parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(accessToken)
+                .getPayload();
+
+        UUID userId = UUID.fromString(claims.getSubject());
+        String email = claims.get("email", String.class);
+        UserRole role = UserRole.valueOf(claims.get("role", String.class));
+
+        return new UserPrincipal(userId, email, role);
     }
 }

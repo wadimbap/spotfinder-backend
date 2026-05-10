@@ -6,8 +6,10 @@ import jakarta.persistence.MappedSuperclass;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.Getter;
+import lombok.Setter;
 
 @Getter
+@Setter
 @MappedSuperclass
 public class BaseUuidEntity {
 
