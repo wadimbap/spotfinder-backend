@@ -42,8 +42,4 @@ Project bootstrap stage.
 ## Next Steps
 
 - create project skeleton
-- configure database connection
-- add Flyway migrations
-- implement auth
 - implement spot domain
-- add CI pipeline
