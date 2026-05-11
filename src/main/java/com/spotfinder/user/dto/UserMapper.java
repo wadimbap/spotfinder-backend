@@ -12,6 +12,7 @@ public class UserMapper {
         user.getEmail(),
         user.getDisplayName(),
         user.getRole(),
+        user.getPrimaryActivity(),
         user.getEnabled(),
         user.getCreatedAt());
   }

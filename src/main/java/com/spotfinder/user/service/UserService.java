@@ -1,6 +1,7 @@
 package com.spotfinder.user.service;
 
 import com.spotfinder.common.exception.UserNotFoundException;
+import com.spotfinder.user.dto.UpdateCurrentUserRequest;
 import com.spotfinder.user.dto.UserMapper;
 import com.spotfinder.user.dto.UserResponse;
 import com.spotfinder.user.entity.UserEntity;
@@ -19,5 +20,19 @@ public class UserService {
     public UserResponse getCurrentUser(UUID userId) {
         UserEntity user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException(userId));
         return userMapper.toResponse(user);
+    }
+
+    public UserResponse updateCurrentUser(UUID userId, UpdateCurrentUserRequest request) {
+        UserEntity user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException(userId));
+
+        if (request.displayName() != null) {
+            user.setDisplayName(request.displayName());
+        }
+        if (request.activityType() != null) {
+            user.setPrimaryActivity(request.activityType());
+        }
+
+        UserEntity savedUser = userRepository.save(user);
+        return userMapper.toResponse(savedUser);
     }
 }
