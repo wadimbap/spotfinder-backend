@@ -1,3 +1,13 @@
 package com.spotfinder.auth.dto;
 
-public record LoginRequest(String email, String name, String password) {}
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+
+public record LoginRequest(
+        @Email
+        @NotBlank
+        String email,
+
+        @NotBlank
+        String password) {
+}
