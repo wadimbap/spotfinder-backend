@@ -2,10 +2,8 @@ package com.spotfinder.user.dto;
 
 import com.spotfinder.user.entity.ActivityType;
 import com.spotfinder.user.entity.UserRole;
-
 import java.time.Instant;
 import java.util.UUID;
-
 import lombok.Builder;
 
 @Builder
