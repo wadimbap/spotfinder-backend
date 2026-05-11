@@ -13,6 +13,7 @@ import com.spotfinder.auth.security.JwtService;
 import com.spotfinder.common.exception.InvalidCredentialsException;
 import com.spotfinder.user.dto.UserMapper;
 import com.spotfinder.user.dto.UserResponse;
+import com.spotfinder.user.entity.ActivityType;
 import com.spotfinder.user.entity.UserEntity;
 import com.spotfinder.user.entity.UserRole;
 import com.spotfinder.user.repository.UserRepository;
@@ -151,6 +152,7 @@ class AuthenticationServiceTest {
                 "user@example.com",
                 "user_name",
                 UserRole.USER,
+                ActivityType.BMX,
                 true,
                 Instant.now()
         );

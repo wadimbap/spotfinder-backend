@@ -6,8 +6,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.spotfinder.common.exception.UserNotFoundException;
+import com.spotfinder.user.dto.UpdateCurrentUserRequest;
 import com.spotfinder.user.dto.UserMapper;
 import com.spotfinder.user.dto.UserResponse;
+import com.spotfinder.user.entity.ActivityType;
 import com.spotfinder.user.entity.UserEntity;
 import com.spotfinder.user.entity.UserRole;
 import com.spotfinder.user.repository.UserRepository;
@@ -67,6 +69,27 @@ class UserServiceTest {
         verify(userRepository).findById(userId);
     }
 
+    @Test
+    void updateCurrentUser_shouldReturnUserResponse() {
+        UUID userId = UUID.randomUUID();
+
+        UserEntity user = userEntity(userId);
+        UserResponse expectedResponse = userResponse(userId);
+        UpdateCurrentUserRequest request = updateCurrentUserRequest();
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.save(user)).thenReturn(user);
+        when(userMapper.toResponse(user)).thenReturn(expectedResponse);
+
+        UserResponse actualResponse = userService.updateCurrentUser(userId, request);
+
+        assertThat(actualResponse).isEqualTo(expectedResponse);
+
+        verify(userRepository).findById(userId);
+        verify(userRepository).save(user);
+        verify(userMapper).toResponse(user);
+    }
+
     private UserEntity userEntity(UUID userId) {
         UserEntity user = new UserEntity();
         user.setId(userId);
@@ -83,8 +106,16 @@ class UserServiceTest {
                 "user@example.com",
                 "user_name",
                 UserRole.USER,
+                ActivityType.BMX,
                 true,
                 Instant.now()
+        );
+    }
+
+    private UpdateCurrentUserRequest updateCurrentUserRequest() {
+        return new UpdateCurrentUserRequest(
+                "new_user_name",
+                ActivityType.ROLLERBLADING
         );
     }
 }
