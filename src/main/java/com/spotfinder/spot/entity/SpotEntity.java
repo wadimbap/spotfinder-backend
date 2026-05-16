@@ -1,6 +1,7 @@
 package com.spotfinder.spot.entity;
 
 import com.spotfinder.common.entity.BaseUuidEntity;
+import com.spotfinder.user.entity.UserEntity;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -9,12 +10,13 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.util.HashSet;
-import java.util.Set;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "spots")
@@ -45,4 +47,8 @@ public class SpotEntity extends BaseUuidEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "feature", nullable = false)
     private Set<SpotFeature> features = new HashSet<>();
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "created_by_user_id", nullable = false)
+    private UserEntity createdBy;
 }
