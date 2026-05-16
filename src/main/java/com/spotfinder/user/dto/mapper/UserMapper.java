@@ -1,5 +1,6 @@
-package com.spotfinder.user.dto;
+package com.spotfinder.user.dto.mapper;
 
+import com.spotfinder.user.dto.UserResponse;
 import com.spotfinder.user.entity.UserEntity;
 import org.springframework.stereotype.Component;
 

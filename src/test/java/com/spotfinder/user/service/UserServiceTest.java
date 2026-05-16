@@ -7,14 +7,13 @@ import static org.mockito.Mockito.when;
 
 import com.spotfinder.common.exception.UserNotFoundException;
 import com.spotfinder.user.dto.UpdateCurrentUserRequest;
-import com.spotfinder.user.dto.UserMapper;
 import com.spotfinder.user.dto.UserResponse;
+import com.spotfinder.user.dto.mapper.UserMapper;
 import com.spotfinder.user.entity.ActivityType;
 import com.spotfinder.user.entity.UserEntity;
 import com.spotfinder.user.entity.UserRole;
 import com.spotfinder.user.repository.UserRepository;
 import java.time.Instant;
-import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,13 +28,16 @@ class UserServiceTest {
     UserRepository userRepository;
 
     @Mock
+    UserReader userReader;
+
+    @Mock
     UserMapper userMapper;
 
     UserService userService;
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(userRepository, userMapper);
+        userService = new UserService(userReader, userRepository, userMapper);
     }
 
     @Test
@@ -45,14 +47,14 @@ class UserServiceTest {
         UserEntity user = userEntity(userId);
         UserResponse expectedResponse = userResponse(userId);
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userReader.getByIdOrElseThrow(userId)).thenReturn(user);
         when(userMapper.toResponse(user)).thenReturn(expectedResponse);
 
         UserResponse actualResponse = userService.getCurrentUser(userId);
 
         assertThat(actualResponse).isEqualTo(expectedResponse);
 
-        verify(userRepository).findById(userId);
+        verify(userReader).getByIdOrElseThrow(userId);
         verify(userMapper).toResponse(user);
     }
 
@@ -60,13 +62,13 @@ class UserServiceTest {
     void getCurrentUser_shouldThrowExceptionWhenUserNotFound() {
         UUID userId = UUID.randomUUID();
 
-        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+        when(userReader.getByIdOrElseThrow(userId)).thenThrow(new UserNotFoundException(userId));
 
         assertThatThrownBy(() -> userService.getCurrentUser(userId))
                 .isInstanceOf(UserNotFoundException.class)
                 .hasMessageContaining(userId.toString());
 
-        verify(userRepository).findById(userId);
+        verify(userReader).getByIdOrElseThrow(userId);
     }
 
     @Test
@@ -77,15 +79,17 @@ class UserServiceTest {
         UserResponse expectedResponse = userResponse(userId);
         UpdateCurrentUserRequest request = updateCurrentUserRequest();
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userReader.getByIdOrElseThrow(userId)).thenReturn(user);
         when(userRepository.save(user)).thenReturn(user);
         when(userMapper.toResponse(user)).thenReturn(expectedResponse);
 
         UserResponse actualResponse = userService.updateCurrentUser(userId, request);
 
         assertThat(actualResponse).isEqualTo(expectedResponse);
+        assertThat(user.getDisplayName()).isEqualTo("new_user_name");
+        assertThat(user.getPrimaryActivity()).isEqualTo(ActivityType.ROLLERBLADING);
 
-        verify(userRepository).findById(userId);
+        verify(userReader).getByIdOrElseThrow(userId);
         verify(userRepository).save(user);
         verify(userMapper).toResponse(user);
     }
