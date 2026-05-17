@@ -1,6 +1,9 @@
 spring:
   application:
     name: spotfinder-backend
+  web:
+    resources:
+      add-mappings: false
 
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/spotfinder}
