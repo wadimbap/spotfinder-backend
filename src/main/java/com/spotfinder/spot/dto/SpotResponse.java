@@ -14,6 +14,7 @@ public record SpotResponse(
         Double longitude,
         SpotType type,
         Set<SpotFeature> features,
+        Boolean approved,
         Instant createdAt,
         Instant updatedAt
 ) {

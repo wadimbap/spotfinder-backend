@@ -48,7 +48,14 @@ public class SpotEntity extends BaseUuidEntity {
     @Column(name = "feature", nullable = false)
     private Set<SpotFeature> features = new HashSet<>();
 
+    @Column(nullable = false)
+    private Boolean approved;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "created_by_user_id", nullable = false)
     private UserEntity createdBy;
+
+    public void approve() {
+        this.approved = Boolean.TRUE;
+    }
 }

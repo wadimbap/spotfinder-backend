@@ -16,6 +16,7 @@ public class SpotMapper {
                 spot.getLongitude(),
                 spot.getType(),
                 spot.getFeatures(),
+                spot.getApproved(),
                 spot.getCreatedAt(),
                 spot.getUpdatedAt()
         );
