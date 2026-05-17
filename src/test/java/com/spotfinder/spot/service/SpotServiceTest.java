@@ -7,6 +7,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.spotfinder.common.exception.SpotNotFoundException;
 import com.spotfinder.common.exception.UserNotFoundException;
 import com.spotfinder.spot.dto.CreateSpotRequest;
 import com.spotfinder.spot.dto.SpotResponse;
@@ -19,6 +20,7 @@ import com.spotfinder.user.entity.UserEntity;
 import com.spotfinder.user.entity.UserRole;
 import com.spotfinder.user.service.UserReader;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -155,6 +157,76 @@ class SpotServiceTest {
         verify(spotMapper, never()).toResponse(any(SpotEntity.class));
     }
 
+    @Test
+    void approveSpot_shouldApproveSpotAndReturnResponse() {
+        SpotEntity spot = spotEntity(false);
+        SpotResponse expectedResponse = spotResponse();
+
+        when(spotRepository.findById(SPOT_ID)).thenReturn(Optional.of(spot));
+        when(spotMapper.toResponse(spot)).thenReturn(expectedResponse);
+
+        SpotResponse actualResponse = spotService.approveSpot(SPOT_ID);
+
+        assertThat(actualResponse).isEqualTo(expectedResponse);
+        assertThat(spot.getApproved()).isTrue();
+
+        verify(spotRepository).findById(SPOT_ID);
+        verify(spotMapper).toResponse(spot);
+    }
+
+    @Test
+    void approveSpot_shouldReturnResponseWhenSpotAlreadyApproved() {
+        SpotEntity spot = spotEntity(true);
+        SpotResponse expectedResponse = spotResponse();
+
+        when(spotRepository.findById(SPOT_ID)).thenReturn(Optional.of(spot));
+        when(spotMapper.toResponse(spot)).thenReturn(expectedResponse);
+
+        SpotResponse actualResponse = spotService.approveSpot(SPOT_ID);
+
+        assertThat(actualResponse).isEqualTo(expectedResponse);
+        assertThat(spot.getApproved()).isTrue();
+
+        verify(spotRepository).findById(SPOT_ID);
+        verify(spotMapper).toResponse(spot);
+    }
+
+    @Test
+    void approveSpot_shouldThrowExceptionWhenSpotNotFound() {
+        when(spotRepository.findById(SPOT_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> spotService.approveSpot(SPOT_ID))
+                .isInstanceOf(SpotNotFoundException.class)
+                .hasMessageContaining(SPOT_ID.toString());
+
+        verify(spotRepository).findById(SPOT_ID);
+        verify(spotMapper, never()).toResponse(any(SpotEntity.class));
+    }
+
+    @Test
+    void deleteSpot_shouldDeleteSpot() {
+        SpotEntity spot = spotEntity(true);
+
+        when(spotRepository.findById(SPOT_ID)).thenReturn(Optional.of(spot));
+
+        spotService.deleteSpot(SPOT_ID);
+
+        verify(spotRepository).findById(SPOT_ID);
+        verify(spotRepository).delete(spot);
+    }
+
+    @Test
+    void deleteSpot_shouldThrowExceptionWhenSpotNotFound() {
+        when(spotRepository.findById(SPOT_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> spotService.deleteSpot(SPOT_ID))
+                .isInstanceOf(SpotNotFoundException.class)
+                .hasMessageContaining(SPOT_ID.toString());
+
+        verify(spotRepository).findById(SPOT_ID);
+        verify(spotRepository, never()).delete(any(SpotEntity.class));
+    }
+
     private CreateSpotRequest createSpotRequest() {
         return new CreateSpotRequest(
                 "Central Plaza",
@@ -168,6 +240,24 @@ class SpotServiceTest {
                         SpotFeature.LEDGE
                 )
         );
+    }
+
+    private SpotEntity spotEntity(boolean approved) {
+        SpotEntity spot = new SpotEntity();
+        spot.setId(SPOT_ID);
+        spot.setName("Central Plaza");
+        spot.setDescription("Flat, stairs and ledges");
+        spot.setLatitude(55.751244);
+        spot.setLongitude(37.618423);
+        spot.setType(SpotType.STREET);
+        spot.setFeatures(Set.of(
+                SpotFeature.FLAT,
+                SpotFeature.STAIRS,
+                SpotFeature.LEDGE
+        ));
+        spot.setCreatedBy(userEntity());
+        spot.setApproved(approved);
+        return spot;
     }
 
     private UserEntity userEntity() {
@@ -193,6 +283,7 @@ class SpotServiceTest {
                         SpotFeature.STAIRS,
                         SpotFeature.LEDGE
                 ),
+                Boolean.FALSE,
                 Instant.now(),
                 Instant.now()
         );
