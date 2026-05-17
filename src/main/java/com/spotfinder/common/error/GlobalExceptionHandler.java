@@ -3,9 +3,8 @@ package com.spotfinder.common.error;
 import com.spotfinder.common.exception.EmailAlreadyExistsException;
 import com.spotfinder.common.exception.InvalidCredentialsException;
 import com.spotfinder.common.exception.PasswordConfirmationMismatchException;
+import com.spotfinder.common.exception.SpotNotFoundException;
 import com.spotfinder.common.exception.UserNotFoundException;
-import java.util.HashMap;
-import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -13,6 +12,9 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import java.util.HashMap;
+import java.util.Map;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -111,4 +113,12 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+    @ExceptionHandler(SpotNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleSpotNotFound(SpotNotFoundException exception) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ErrorResponse.of(
+                        "SPOT_NOT_FOUND",
+                        exception.getMessage()
+                ));
+    }
 }
