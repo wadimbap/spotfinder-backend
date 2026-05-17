@@ -8,11 +8,12 @@ import com.spotfinder.spot.entity.SpotEntity;
 import com.spotfinder.spot.repository.SpotRepository;
 import com.spotfinder.user.entity.UserEntity;
 import com.spotfinder.user.service.UserReader;
-import jakarta.transaction.Transactional;
 import java.util.HashSet;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -22,8 +23,17 @@ public class SpotService {
     private final SpotRepository spotRepository;
     private final SpotMapper spotMapper;
 
-
+    @Transactional
     public SpotResponse createSpot(UUID userId, CreateSpotRequest request) {
+        return createSpot(userId, request, false);
+    }
+
+    @Transactional
+    public SpotResponse createApprovedSpot(UUID userId, CreateSpotRequest request) {
+        return createSpot(userId, request, true);
+    }
+
+    private SpotResponse createSpot(UUID userId, CreateSpotRequest request, boolean approved) {
         UserEntity user = userReader.getByIdOrElseThrow(userId);
 
         SpotEntity spot = new SpotEntity();
@@ -33,8 +43,7 @@ public class SpotService {
         spot.setLongitude(request.longitude());
         spot.setType(request.type());
         spot.setCreatedBy(user);
-        spot.setApproved(Boolean.FALSE);
-
+        spot.setApproved(approved);
         spot.setFeatures(
                 request.features() == null
                         ? new HashSet<>()
@@ -44,6 +53,41 @@ public class SpotService {
         SpotEntity savedSpot = spotRepository.save(spot);
 
         return spotMapper.toResponse(savedSpot);
+    }
+
+    @Transactional(readOnly = true)
+    public List<SpotResponse> getAllApprovedSpots(UUID userId) {
+        userReader.getByIdOrElseThrow(userId);
+
+        return spotRepository.getAllApprovedSpots()
+                .stream()
+                .map(spotMapper::toResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public SpotResponse getBySpotIdAndApprovedIsTrue(UUID userId, UUID spotId) {
+        userReader.getByIdOrElseThrow(userId);
+        SpotEntity spot = spotRepository.findByIdAndApprovedTrue(spotId)
+                .orElseThrow(() -> new SpotNotFoundException(spotId));
+
+        return spotMapper.toResponse(spot);
+    }
+
+    @Transactional(readOnly = true)
+    public List<SpotResponse> getAllSpotsForAdmin() {
+
+        return spotRepository.findAll()
+                .stream()
+                .map(spotMapper::toResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public SpotResponse getSpotByIdForAdmin(UUID spotId) {
+        SpotEntity spot = getSpotByIdOrElseThrow(spotId);
+
+        return spotMapper.toResponse(spot);
     }
 
     @Transactional
