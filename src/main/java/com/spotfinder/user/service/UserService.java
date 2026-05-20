@@ -28,8 +28,8 @@ public class UserService {
         if (request.displayName() != null) {
             user.setDisplayName(request.displayName());
         }
-        if (request.activityType() != null) {
-            user.setPrimaryActivity(request.activityType());
+        if (request.primaryActivity() != null) {
+            user.setPrimaryActivity(request.primaryActivity());
         }
 
         UserEntity savedUser = userRepository.save(user);
