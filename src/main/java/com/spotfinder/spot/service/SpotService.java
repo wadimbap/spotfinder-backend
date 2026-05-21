@@ -102,7 +102,16 @@ public class SpotService {
     }
 
     @Transactional
+    public void rejectSpot(UUID spotId) {
+        deleteSpotById(spotId);
+    }
+
+    @Transactional
     public void deleteSpot(UUID spotId) {
+        deleteSpotById(spotId);
+    }
+
+    private void deleteSpotById(UUID spotId) {
         SpotEntity spot = getSpotByIdOrElseThrow(spotId);
         spotRepository.delete(spot);
     }

@@ -56,6 +56,12 @@ public class SpotAdminController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/{spotId}/reject")
+    public ResponseEntity<Void> rejectSpot(@PathVariable UUID spotId) {
+        spotService.rejectSpot(spotId);
+        return ResponseEntity.noContent().build();
+    }
+
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{spotId}")
     public ResponseEntity<Void> deleteSpot(@PathVariable UUID spotId) {
