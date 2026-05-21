@@ -257,11 +257,11 @@ class SpotServiceTest {
     }
 
     @Test
-    void getAllSpotsForAdmin_shouldReturnAllPendingSpots() {
-        SpotEntity firstSpot = spotEntity(true);
+    void getAllPendingSpotsForAdmin_shouldReturnPendingSpots() {
+        SpotEntity firstSpot = spotEntity(false);
         SpotEntity secondSpot = spotEntity(false);
 
-        SpotResponse firstResponse = spotResponse(true);
+        SpotResponse firstResponse = spotResponse(false);
         SpotResponse secondResponse = spotResponse(false);
 
         when(spotRepository.findAllByApprovedFalse()).thenReturn(List.of(firstSpot, secondSpot));
@@ -373,6 +373,32 @@ class SpotServiceTest {
 
         verify(spotRepository).findById(SPOT_ID);
         verify(spotRepository, never()).delete(any(SpotEntity.class));
+    }
+
+    @Test
+    void rejectSpot_shouldDeleteSpot() {
+        SpotEntity spot = spotEntity(false);
+
+        when(spotRepository.findById(SPOT_ID)).thenReturn(Optional.of(spot));
+
+        spotService.rejectSpot(SPOT_ID);
+
+        verify(spotRepository).findById(SPOT_ID);
+        verify(spotRepository).delete(spot);
+        verify(spotMapper, never()).toResponse(any(SpotEntity.class));
+    }
+
+    @Test
+    void rejectSpot_shouldThrowExceptionWhenSpotNotFound() {
+        when(spotRepository.findById(SPOT_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> spotService.rejectSpot(SPOT_ID))
+                .isInstanceOf(SpotNotFoundException.class)
+                .hasMessageContaining(SPOT_ID.toString());
+
+        verify(spotRepository).findById(SPOT_ID);
+        verify(spotRepository, never()).delete(any(SpotEntity.class));
+        verify(spotMapper, never()).toResponse(any(SpotEntity.class));
     }
 
     private CreateSpotRequest createSpotRequest() {
