@@ -10,7 +10,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 @ActiveProfiles("test")
-@SpringBootTest
+@SpringBootTest(properties = "storage.minio.initialize-bucket=false")
 class SpotfinderBackendApplicationTests {
 
   @Container

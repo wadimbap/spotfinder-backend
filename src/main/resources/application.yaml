@@ -27,6 +27,7 @@ storage:
     access-key: ${MINIO_ACCESS_KEY:admin}
     secret-key: ${MINIO_SECRET_KEY:adminadmin}
     bucket: ${MINIO_BUCKET:spotfinder-local}
+    initialize-bucket: ${MINIO_INITIALIZE_BUCKET:true}
 
 server:
   port: ${SERVER_PORT:8080}

@@ -22,6 +22,10 @@ public class MinioObjectStorageService implements ObjectStorageService {
 
     @PostConstruct
     void initBucket() {
+        if (!minioProperties.initializeBucket()) {
+            return;
+        }
+
         try {
             boolean exists = minioClient.bucketExists(
                     BucketExistsArgs.builder()
