@@ -58,6 +58,23 @@ jobs:
             -v spotfinder-stage-minio-data:/data \
             minio/minio:latest server /data --console-address ":9001"
 
+      - name: Check MinIO health
+        run: |
+          for i in $(seq 1 20); do
+            if docker run --rm --network spotfinder-stage-net curlimages/curl:8.10.1 \
+              -f http://spotfinder-stage-minio:9000/minio/health/live; then
+              echo "Stage MinIO is healthy"
+              exit 0
+            fi
+
+            echo "Waiting for MinIO... attempt $i"
+            sleep 3
+          done
+
+          echo "Stage MinIO healthcheck failed"
+          docker logs spotfinder-stage-minio --tail 100
+          exit 1
+
       - name: Deploy backend to stage
         run: |
           docker rm -f spotfinder-stage-backend || true
@@ -73,25 +90,9 @@ jobs:
             -e MINIO_ENDPOINT=http://spotfinder-stage-minio:9000 \
             -e MINIO_ACCESS_KEY=admin \
             -e MINIO_SECRET_KEY=adminadmin \
-            -e MINIO_BUCKET=spotfinder-stage \     
+            -e MINIO_BUCKET=spotfinder-stage \
+            -e MINIO_INITIALIZE_BUCKET=true \
             spotfinder-backend:stage
-
-      - name: Check MinIO health
-        run: |
-          for i in $(seq 1 20); do
-            if docker run --rm --network spotfinder-stage-net curlimages/curl:8.10.1 \
-              -f http://spotfinder-stage-minio:9000/minio/health/live; then
-              echo "Stage MinIO is healthy"
-              exit 0
-            fi
-          
-            echo "Waiting for MinIO... attempt $i"
-            sleep 3
-          done
-          
-          echo "Stage MinIO healthcheck failed"
-          docker logs spotfinder-stage-minio --tail 100
-          exit 1
 
       - name: Check stage health
         run: |
