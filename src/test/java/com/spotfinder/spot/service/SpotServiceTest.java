@@ -446,6 +446,7 @@ class SpotServiceTest {
                 SpotType.STREET,
                 Set.of(SpotFeature.FLAT, SpotFeature.STAIRS, SpotFeature.LEDGE),
                 approved,
+                USER_ID,
                 Instant.now(),
                 Instant.now());
     }
