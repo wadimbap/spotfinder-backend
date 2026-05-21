@@ -75,9 +75,9 @@ public class SpotService {
     }
 
     @Transactional(readOnly = true)
-    public List<SpotResponse> getAllSpotsForAdmin() {
+    public List<SpotResponse> getAllPendingSpotsForAdmin() {
 
-        return spotRepository.findAll()
+        return spotRepository.findAllByApprovedFalse()
                 .stream()
                 .map(spotMapper::toResponse)
                 .toList();

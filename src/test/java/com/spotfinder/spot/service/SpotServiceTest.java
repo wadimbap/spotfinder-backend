@@ -257,22 +257,22 @@ class SpotServiceTest {
     }
 
     @Test
-    void getAllSpotsForAdmin_shouldReturnAllSpots() {
+    void getAllSpotsForAdmin_shouldReturnAllPendingSpots() {
         SpotEntity firstSpot = spotEntity(true);
         SpotEntity secondSpot = spotEntity(false);
 
         SpotResponse firstResponse = spotResponse(true);
         SpotResponse secondResponse = spotResponse(false);
 
-        when(spotRepository.findAll()).thenReturn(List.of(firstSpot, secondSpot));
+        when(spotRepository.findAllByApprovedFalse()).thenReturn(List.of(firstSpot, secondSpot));
         when(spotMapper.toResponse(firstSpot)).thenReturn(firstResponse);
         when(spotMapper.toResponse(secondSpot)).thenReturn(secondResponse);
 
-        List<SpotResponse> actualResponses = spotService.getAllSpotsForAdmin();
+        List<SpotResponse> actualResponses = spotService.getAllPendingSpotsForAdmin();
 
         assertThat(actualResponses).isEqualTo(List.of(firstResponse, secondResponse));
 
-        verify(spotRepository).findAll();
+        verify(spotRepository).findAllByApprovedFalse();
         verify(spotMapper).toResponse(firstSpot);
         verify(spotMapper).toResponse(secondSpot);
     }

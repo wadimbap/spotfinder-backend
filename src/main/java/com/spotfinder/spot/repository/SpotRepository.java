@@ -13,4 +13,6 @@ public interface SpotRepository extends JpaRepository<SpotEntity, UUID> {
     List<SpotEntity> getAllApprovedSpots();
 
     Optional<SpotEntity> findByIdAndApprovedTrue(UUID id);
+
+    List<SpotEntity> findAllByApprovedFalse();
 }
