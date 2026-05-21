@@ -33,3 +33,11 @@ app:
   jwt:
     secret: ${JWT_SECRET:change-me-change-me-change-me-change-me-change-me}
     expiration-minutes: ${JWT_EXPIRATION_MINUTES:60}
+
+logging:
+  level:
+    root: INFO
+    com.spotfinder: DEBUG
+    org.springframework.web: INFO
+    org.springframework.security: INFO
+    org.hibernate.SQL: DEBUG
