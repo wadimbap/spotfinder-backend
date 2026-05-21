@@ -16,6 +16,7 @@ import com.spotfinder.spot.entity.SpotEntity;
 import com.spotfinder.spot.entity.SpotFeature;
 import com.spotfinder.spot.entity.SpotType;
 import com.spotfinder.spot.repository.SpotRepository;
+import com.spotfinder.spot.service.impl.SpotService;
 import com.spotfinder.user.entity.UserEntity;
 import com.spotfinder.user.entity.UserRole;
 import com.spotfinder.user.service.UserReader;
