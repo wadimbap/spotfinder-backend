@@ -15,6 +15,7 @@ public record SpotResponse(
         SpotType type,
         Set<SpotFeature> features,
         Boolean approved,
+        UUID createdByUserId,
         Instant createdAt,
         Instant updatedAt
 ) {

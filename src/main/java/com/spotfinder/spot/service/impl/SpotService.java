@@ -1,4 +1,4 @@
-package com.spotfinder.spot.service;
+package com.spotfinder.spot.service.impl;
 
 import com.spotfinder.common.exception.SpotNotFoundException;
 import com.spotfinder.spot.dto.CreateSpotRequest;

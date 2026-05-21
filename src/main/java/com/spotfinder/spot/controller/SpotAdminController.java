@@ -3,7 +3,7 @@ package com.spotfinder.spot.controller;
 import com.spotfinder.auth.security.UserPrincipal;
 import com.spotfinder.spot.dto.CreateSpotRequest;
 import com.spotfinder.spot.dto.SpotResponse;
-import com.spotfinder.spot.service.SpotService;
+import com.spotfinder.spot.service.impl.SpotService;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -14,7 +14,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -50,7 +49,7 @@ public class SpotAdminController {
         return ResponseEntity.ok(response);
     }
 
-    @PatchMapping("/{spotId}/approve")
+    @PostMapping("/{spotId}/approve")
     public ResponseEntity<SpotResponse> approveSpot(@PathVariable UUID spotId) {
         SpotResponse response = spotService.approveSpot(spotId);
         return ResponseEntity.ok(response);

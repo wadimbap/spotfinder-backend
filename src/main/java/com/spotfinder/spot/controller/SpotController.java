@@ -3,7 +3,7 @@ package com.spotfinder.spot.controller;
 import com.spotfinder.auth.security.UserPrincipal;
 import com.spotfinder.spot.dto.CreateSpotRequest;
 import com.spotfinder.spot.dto.SpotResponse;
-import com.spotfinder.spot.service.SpotService;
+import com.spotfinder.spot.service.impl.SpotService;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
