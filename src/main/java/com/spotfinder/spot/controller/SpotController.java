@@ -35,6 +35,14 @@ public class SpotController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @GetMapping("/my")
+    public ResponseEntity<List<SpotResponse>> getMySpots(
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        List<SpotResponse> responses = spotService.getMySpots(principal.id());
+        return ResponseEntity.ok(responses);
+    }
+
     @GetMapping
     public ResponseEntity<List<SpotResponse>> getAllApprovedSpots(
             @AuthenticationPrincipal UserPrincipal principal

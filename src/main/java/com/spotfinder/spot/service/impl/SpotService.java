@@ -74,6 +74,16 @@ public class SpotService {
         return spotMapper.toResponse(spot);
     }
 
+    @Transactional
+    public List<SpotResponse> getMySpots(UUID userId) {
+        userReader.getByIdOrElseThrow(userId);
+
+        return spotRepository.findAllByCreatedByIdOrderByCreatedAtDesc(userId)
+                .stream()
+                .map(spotMapper::toResponse)
+                .toList();
+    }
+
     @Transactional(readOnly = true)
     public List<SpotResponse> getAllPendingSpotsForAdmin() {
 

@@ -402,6 +402,44 @@ class SpotServiceTest {
         verify(spotMapper, never()).toResponse(any(SpotEntity.class));
     }
 
+    @Test
+    void getMySpots_shouldReturnCurrentUserSpots() {
+        UserEntity user = userEntity();
+        SpotEntity firstSpot = spotEntity(false);
+        SpotEntity secondSpot = spotEntity(true);
+
+        SpotResponse firstResponse = spotResponse(false);
+        SpotResponse secondResponse = spotResponse(true);
+
+        when(userReader.getByIdOrElseThrow(USER_ID)).thenReturn(user);
+        when(spotRepository.findAllByCreatedByIdOrderByCreatedAtDesc(USER_ID))
+                .thenReturn(List.of(firstSpot, secondSpot));
+        when(spotMapper.toResponse(firstSpot)).thenReturn(firstResponse);
+        when(spotMapper.toResponse(secondSpot)).thenReturn(secondResponse);
+
+        List<SpotResponse> responses = spotService.getMySpots(USER_ID);
+
+        assertThat(responses).isEqualTo(List.of(firstResponse, secondResponse));
+
+        verify(userReader).getByIdOrElseThrow(USER_ID);
+        verify(spotRepository).findAllByCreatedByIdOrderByCreatedAtDesc(USER_ID);
+        verify(spotMapper).toResponse(firstSpot);
+        verify(spotMapper).toResponse(secondSpot);
+    }
+
+    @Test
+    void getMySpots_shouldThrowExceptionWhenUserNotFound() {
+        when(userReader.getByIdOrElseThrow(USER_ID)).thenThrow(new UserNotFoundException(USER_ID));
+
+        assertThatThrownBy(() -> spotService.getMySpots(USER_ID))
+                .isInstanceOf(UserNotFoundException.class)
+                .hasMessageContaining(USER_ID.toString());
+
+        verify(userReader).getByIdOrElseThrow(USER_ID);
+        verify(spotRepository, never()).findAllByCreatedByIdOrderByCreatedAtDesc(USER_ID);
+        verify(spotMapper, never()).toResponse(any(SpotEntity.class));
+    }
+
     private CreateSpotRequest createSpotRequest() {
         return new CreateSpotRequest(
                 "Central Plaza",
