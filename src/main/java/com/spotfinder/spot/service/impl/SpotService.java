@@ -1,8 +1,10 @@
 package com.spotfinder.spot.service.impl;
 
+import com.spotfinder.common.exception.SpotAlreadyApprovedException;
 import com.spotfinder.common.exception.SpotNotFoundException;
 import com.spotfinder.spot.dto.CreateSpotRequest;
 import com.spotfinder.spot.dto.SpotResponse;
+import com.spotfinder.spot.dto.UpdateSpotRequest;
 import com.spotfinder.spot.dto.mapper.SpotMapper;
 import com.spotfinder.spot.entity.SpotEntity;
 import com.spotfinder.spot.repository.SpotRepository;
@@ -82,6 +84,31 @@ public class SpotService {
                 .stream()
                 .map(spotMapper::toResponse)
                 .toList();
+    }
+
+    @Transactional
+    public SpotResponse updateMyPendingSpot(UUID userId, UUID spotId, UpdateSpotRequest request) {
+        userReader.getByIdOrElseThrow(userId);
+
+        SpotEntity spot = spotRepository.findByIdAndCreatedById(spotId, userId)
+                .orElseThrow(() -> new SpotNotFoundException(spotId));
+
+        if (Boolean.TRUE.equals(spot.getApproved())) {
+            throw new SpotAlreadyApprovedException(spotId);
+        }
+
+        spot.setName(request.name().trim());
+        spot.setDescription(request.description());
+        spot.setLatitude(request.latitude());
+        spot.setLongitude(request.longitude());
+        spot.setType(request.type());
+        spot.setFeatures(
+                request.features() == null
+                        ? new HashSet<>()
+                        : new HashSet<>(request.features())
+        );
+
+        return spotMapper.toResponse(spot);
     }
 
     @Transactional(readOnly = true)

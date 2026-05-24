@@ -3,6 +3,7 @@ package com.spotfinder.spot.controller;
 import com.spotfinder.auth.security.UserPrincipal;
 import com.spotfinder.spot.dto.CreateSpotRequest;
 import com.spotfinder.spot.dto.SpotResponse;
+import com.spotfinder.spot.dto.UpdateSpotRequest;
 import com.spotfinder.spot.service.impl.SpotService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -15,6 +16,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -41,6 +43,20 @@ public class SpotController {
     ) {
         List<SpotResponse> responses = spotService.getMySpots(principal.id());
         return ResponseEntity.ok(responses);
+    }
+
+    @PutMapping("/{spotId}")
+    public ResponseEntity<SpotResponse> updateMyPendingSpot(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable UUID spotId,
+            @Valid @RequestBody UpdateSpotRequest request
+    ) {
+        SpotResponse response = spotService.updateMyPendingSpot(
+                principal.id(),
+                spotId,
+                request);
+
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping

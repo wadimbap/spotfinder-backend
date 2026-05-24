@@ -17,4 +17,6 @@ public interface SpotRepository extends JpaRepository<SpotEntity, UUID> {
     List<SpotEntity> findAllByApprovedFalse();
 
     List<SpotEntity> findAllByCreatedByIdOrderByCreatedAtDesc(UUID userId);
+
+    Optional<SpotEntity> findByIdAndCreatedById(UUID spotId, UUID userId);
 }

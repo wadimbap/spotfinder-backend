@@ -7,10 +7,12 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.spotfinder.common.exception.SpotAlreadyApprovedException;
 import com.spotfinder.common.exception.SpotNotFoundException;
 import com.spotfinder.common.exception.UserNotFoundException;
 import com.spotfinder.spot.dto.CreateSpotRequest;
 import com.spotfinder.spot.dto.SpotResponse;
+import com.spotfinder.spot.dto.UpdateSpotRequest;
 import com.spotfinder.spot.dto.mapper.SpotMapper;
 import com.spotfinder.spot.entity.SpotEntity;
 import com.spotfinder.spot.entity.SpotFeature;
@@ -440,6 +442,65 @@ class SpotServiceTest {
         verify(spotMapper, never()).toResponse(any(SpotEntity.class));
     }
 
+    @Test
+    void updateMyPendingSpot_shouldUpdateOwnPendingSpot() {
+        SpotEntity spot = spotEntity(false);
+        UpdateSpotRequest request = updateSpotRequest();
+        SpotResponse expectedResponse = spotResponse(false);
+
+        when(userReader.getByIdOrElseThrow(USER_ID)).thenReturn(userEntity());
+        when(spotRepository.findByIdAndCreatedById(SPOT_ID, USER_ID)).thenReturn(Optional.of(spot));
+        when(spotMapper.toResponse(spot)).thenReturn(expectedResponse);
+
+        SpotResponse actualResponse = spotService.updateMyPendingSpot(USER_ID, SPOT_ID, request);
+
+        assertThat(actualResponse).isEqualTo(expectedResponse);
+
+        assertThat(spot.getName()).isEqualTo("Updated Spot");
+        assertThat(spot.getDescription()).isEqualTo("Updated description");
+        assertThat(spot.getLatitude()).isEqualTo(59.852079);
+        assertThat(spot.getLongitude()).isEqualTo(30.322437);
+        assertThat(spot.getType()).isEqualTo(SpotType.SKATEPARK);
+        assertThat(spot.getFeatures()).isEqualTo(Set.of(SpotFeature.RAIL, SpotFeature.LEDGE));
+
+        verify(userReader).getByIdOrElseThrow(USER_ID);
+        verify(spotRepository).findByIdAndCreatedById(SPOT_ID, USER_ID);
+        verify(spotMapper).toResponse(spot);
+    }
+
+    @Test
+    void updateMyPendingSpot_shouldThrowWhenSpotNotFound() {
+        UpdateSpotRequest request = updateSpotRequest();
+
+        when(userReader.getByIdOrElseThrow(USER_ID)).thenReturn(userEntity());
+        when(spotRepository.findByIdAndCreatedById(SPOT_ID, USER_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> spotService.updateMyPendingSpot(USER_ID, SPOT_ID, request))
+                .isInstanceOf(SpotNotFoundException.class)
+                .hasMessageContaining(SPOT_ID.toString());
+
+        verify(userReader).getByIdOrElseThrow(USER_ID);
+        verify(spotRepository).findByIdAndCreatedById(SPOT_ID, USER_ID);
+        verify(spotMapper, never()).toResponse(any(SpotEntity.class));
+    }
+
+    @Test
+    void updateMyPendingSpot_shouldThrowWhenSpotAlreadyApproved() {
+        SpotEntity spot = spotEntity(true);
+        UpdateSpotRequest request = updateSpotRequest();
+
+        when(userReader.getByIdOrElseThrow(USER_ID)).thenReturn(userEntity());
+        when(spotRepository.findByIdAndCreatedById(SPOT_ID, USER_ID)).thenReturn(Optional.of(spot));
+
+        assertThatThrownBy(() -> spotService.updateMyPendingSpot(USER_ID, SPOT_ID, request))
+                .isInstanceOf(SpotAlreadyApprovedException.class)
+                .hasMessageContaining(SPOT_ID.toString());
+
+        verify(userReader).getByIdOrElseThrow(USER_ID);
+        verify(spotRepository).findByIdAndCreatedById(SPOT_ID, USER_ID);
+        verify(spotMapper, never()).toResponse(any(SpotEntity.class));
+    }
+
     private CreateSpotRequest createSpotRequest() {
         return new CreateSpotRequest(
                 "Central Plaza",
@@ -472,6 +533,17 @@ class SpotServiceTest {
         user.setRole(UserRole.USER);
         user.setEnabled(true);
         return user;
+    }
+
+    private UpdateSpotRequest updateSpotRequest() {
+        return new UpdateSpotRequest(
+                "Updated Spot",
+                "Updated description",
+                59.852079,
+                30.322437,
+                SpotType.SKATEPARK,
+                Set.of(SpotFeature.RAIL, SpotFeature.LEDGE)
+        );
     }
 
     private SpotResponse spotResponse(boolean approved) {
