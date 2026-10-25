@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.spotfinder.common.exception.SpotNotFoundException;
@@ -31,10 +32,13 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.multipart.MultipartFile;
 
 @ExtendWith(MockitoExtension.class)
@@ -138,6 +142,32 @@ class SpotPhotoServiceImplTest {
                 any()
         );
         verify(spotPhotoRepository, never()).save(any(SpotPhotoEntity.class));
+    }
+
+    @ParameterizedTest
+    @EnumSource(UserRole.class)
+    void uploadPhoto_shouldRejectNonOwnerRegardlessOfRole(UserRole role) {
+        when(userReader.getByIdOrElseThrow(OTHER_USER_ID))
+                .thenReturn(userEntity(OTHER_USER_ID, role));
+        when(spotRepository.findById(SPOT_ID)).thenReturn(Optional.of(spotEntity()));
+
+        assertThatThrownBy(() -> spotPhotoService.uploadPhoto(OTHER_USER_ID, SPOT_ID, imageFile()))
+                .isInstanceOf(AccessDeniedException.class);
+
+        verifyNoInteractions(objectStorageService, spotPhotoRepository, spotPhotoMapper);
+    }
+
+    @Test
+    void uploadPhoto_shouldRejectLegacySpotWithoutOwner() {
+        SpotEntity spot = spotEntity();
+        spot.setCreatedBy(null);
+        when(userReader.getByIdOrElseThrow(USER_ID)).thenReturn(userEntity(USER_ID, UserRole.USER));
+        when(spotRepository.findById(SPOT_ID)).thenReturn(Optional.of(spot));
+
+        assertThatThrownBy(() -> spotPhotoService.uploadPhoto(USER_ID, SPOT_ID, imageFile()))
+                .isInstanceOf(AccessDeniedException.class);
+
+        verifyNoInteractions(objectStorageService, spotPhotoRepository, spotPhotoMapper);
     }
 
     @Test
@@ -331,6 +361,7 @@ class SpotPhotoServiceImplTest {
         SpotEntity spot = new SpotEntity();
         spot.setId(SPOT_ID);
         spot.setName("Central Plaza");
+        spot.setCreatedBy(userEntity(USER_ID, UserRole.USER));
         return spot;
     }
 

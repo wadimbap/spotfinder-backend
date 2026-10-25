@@ -79,7 +79,8 @@ class CommentControllerTest {
                                 """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.parentId").doesNotExist());
+                .andExpect(jsonPath("$.parentId").doesNotExist())
+                .andExpect(jsonPath("$.createdByDisplayName").value("Alex"));
 
         verify(commentService).createComment(eq(USER_ID), any(), eq(SPOT_ID));
     }
@@ -185,6 +186,7 @@ class CommentControllerTest {
                 parentId,
                 "Root comment",
                 USER_ID,
+                "Alex",
                 Instant.parse("2026-08-23T10:00:00Z"),
                 Instant.parse("2026-08-23T10:00:00Z")
         );

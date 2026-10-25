@@ -8,6 +8,7 @@ public record CommentResponse(
         Long parentId,
         String text,
         UUID createdByUserId,
+        String createdByDisplayName,
         Instant createdAt,
         Instant updatedAt
 ) {

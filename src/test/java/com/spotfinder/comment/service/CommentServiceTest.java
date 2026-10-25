@@ -149,7 +149,7 @@ class CommentServiceTest {
 
         when(userReader.getByIdOrElseThrow(USER_ID)).thenReturn(user(USER_ID));
         when(spotReader.getByIdOrElseThrow(SPOT_ID)).thenReturn(spot(SPOT_ID, true, OTHER_USER_ID));
-        when(commentRepository.findAllBySpotIdOrderByCreatedAtAsc(SPOT_ID)).thenReturn(List.of(first, second));
+        when(commentRepository.findAllBySpotIdOrderByCreatedAtAscIdAsc(SPOT_ID)).thenReturn(List.of(first, second));
         when(commentMapper.toResponse(first)).thenReturn(firstResponse);
         when(commentMapper.toResponse(second)).thenReturn(secondResponse);
 
@@ -225,6 +225,6 @@ class CommentServiceTest {
     }
 
     private CommentResponse response(Long id, Long parentId, UUID authorId) {
-        return new CommentResponse(id, parentId, "Comment", authorId, Instant.now(), Instant.now());
+        return new CommentResponse(id, parentId, "Comment", authorId, "user", Instant.now(), Instant.now());
     }
 }

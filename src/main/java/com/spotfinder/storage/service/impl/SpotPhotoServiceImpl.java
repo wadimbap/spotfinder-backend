@@ -20,6 +20,7 @@ import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -47,6 +48,10 @@ public class SpotPhotoServiceImpl implements SpotPhotoService {
     public SpotPhotoResponse uploadPhoto(UUID userId, UUID spotId, MultipartFile file) {
         UserEntity user = userReader.getByIdOrElseThrow(userId);
         SpotEntity spot = getSpotByIdOrElseThrow(spotId);
+
+        if (spot.getCreatedBy() == null || !spot.getCreatedBy().getId().equals(userId)) {
+            throw new AccessDeniedException("Only the spot owner can upload photos");
+        }
 
         validateFile(file);
 

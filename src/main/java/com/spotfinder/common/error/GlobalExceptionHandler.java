@@ -6,6 +6,7 @@ import com.spotfinder.common.exception.EmailAlreadyExistsException;
 import com.spotfinder.common.exception.InvalidCommentParentException;
 import com.spotfinder.common.exception.InvalidCredentialsException;
 import com.spotfinder.common.exception.PasswordConfirmationMismatchException;
+import com.spotfinder.common.exception.SpotAlreadyApprovedException;
 import com.spotfinder.common.exception.SpotNotFoundException;
 import com.spotfinder.common.exception.UserNotFoundException;
 import java.time.Instant;
@@ -148,6 +149,17 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ErrorResponse.of(
                         "SPOT_NOT_FOUND",
+                        exception.getMessage()
+                ));
+    }
+
+    @ExceptionHandler(SpotAlreadyApprovedException.class)
+    public ResponseEntity<ErrorResponse> handleSpotAlreadyApproved(
+            SpotAlreadyApprovedException exception
+    ) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ErrorResponse.of(
+                        "SPOT_ALREADY_APPROVED",
                         exception.getMessage()
                 ));
     }

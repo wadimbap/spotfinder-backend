@@ -23,12 +23,12 @@ public class UserService {
     }
 
     public UserResponse updateCurrentUser(UUID userId, UpdateCurrentUserRequest request) {
-        UserEntity user = userReader.getByIdOrElseThrow(userId);;
+        UserEntity user = userReader.getByIdOrElseThrow(userId);
 
         if (request.displayName() != null) {
             user.setDisplayName(request.displayName());
         }
-        if (request.primaryActivity() != null) {
+        if (request.hasPrimaryActivity()) {
             user.setPrimaryActivity(request.primaryActivity());
         }
 

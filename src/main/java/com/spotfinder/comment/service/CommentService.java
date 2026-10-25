@@ -38,7 +38,7 @@ public class CommentService {
 
         ensureCanAccessComments(user, spot);
 
-        List<CommentEntity> comments = commentRepository.findAllBySpotIdOrderByCreatedAtAsc(spotId);
+        List<CommentEntity> comments = commentRepository.findAllBySpotIdOrderByCreatedAtAscIdAsc(spotId);
 
         return comments.stream().map(commentMapper::toResponse).toList();
     }

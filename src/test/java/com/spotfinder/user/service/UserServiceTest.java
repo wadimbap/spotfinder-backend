@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import tools.jackson.databind.json.JsonMapper;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -92,6 +93,69 @@ class UserServiceTest {
         verify(userReader).getByIdOrElseThrow(userId);
         verify(userRepository).save(user);
         verify(userMapper).toResponse(user);
+    }
+
+    @Test
+    void updateCurrentUser_shouldClearExplicitlyNullActivity() {
+        UUID userId = UUID.randomUUID();
+        UserEntity user = userEntity(userId);
+        user.setPrimaryActivity(ActivityType.BMX);
+        UpdateCurrentUserRequest request = JsonMapper.builder().build().readValue(
+                "{\"primaryActivity\":null}", UpdateCurrentUserRequest.class
+        );
+        when(userReader.getByIdOrElseThrow(userId)).thenReturn(user);
+
+        userService.updateCurrentUser(userId, request);
+
+        assertThat(user.getPrimaryActivity()).isNull();
+        assertThat(user.getDisplayName()).isEqualTo("user_name");
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void updateCurrentUser_shouldPreserveActivityWhenOnlyNameIsProvided() {
+        UUID userId = UUID.randomUUID();
+        UserEntity user = userEntity(userId);
+        user.setPrimaryActivity(ActivityType.BMX);
+        UpdateCurrentUserRequest request = JsonMapper.builder().build().readValue(
+                "{\"displayName\":\"new_name\"}", UpdateCurrentUserRequest.class
+        );
+        when(userReader.getByIdOrElseThrow(userId)).thenReturn(user);
+
+        userService.updateCurrentUser(userId, request);
+
+        assertThat(user.getPrimaryActivity()).isEqualTo(ActivityType.BMX);
+        assertThat(user.getDisplayName()).isEqualTo("new_name");
+    }
+
+    @Test
+    void updateCurrentUser_shouldPreserveFieldsForEmptyPatch() {
+        UUID userId = UUID.randomUUID();
+        UserEntity user = userEntity(userId);
+        user.setPrimaryActivity(ActivityType.BMX);
+        UpdateCurrentUserRequest request = JsonMapper.builder().build().readValue(
+                "{}", UpdateCurrentUserRequest.class
+        );
+        when(userReader.getByIdOrElseThrow(userId)).thenReturn(user);
+
+        userService.updateCurrentUser(userId, request);
+
+        assertThat(user.getPrimaryActivity()).isEqualTo(ActivityType.BMX);
+        assertThat(user.getDisplayName()).isEqualTo("user_name");
+    }
+
+    @Test
+    void updateCurrentUser_shouldAcceptActivityFromJson() {
+        UUID userId = UUID.randomUUID();
+        UserEntity user = userEntity(userId);
+        UpdateCurrentUserRequest request = JsonMapper.builder().build().readValue(
+                "{\"primaryActivity\":\"BMX\"}", UpdateCurrentUserRequest.class
+        );
+        when(userReader.getByIdOrElseThrow(userId)).thenReturn(user);
+
+        userService.updateCurrentUser(userId, request);
+
+        assertThat(user.getPrimaryActivity()).isEqualTo(ActivityType.BMX);
     }
 
     private UserEntity userEntity(UUID userId) {

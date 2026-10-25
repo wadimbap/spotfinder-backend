@@ -25,6 +25,7 @@ class CommentMapperTest {
         assertThat(response.parentId()).isNull();
         assertThat(response.text()).isEqualTo("Root comment");
         assertThat(response.createdByUserId()).isEqualTo(userId);
+        assertThat(response.createdByDisplayName()).isEqualTo("Alex");
         assertThat(response.createdAt()).isEqualTo(Instant.parse("2026-08-23T10:00:00Z"));
         assertThat(response.updatedAt()).isEqualTo(Instant.parse("2026-08-23T11:00:00Z"));
     }
@@ -43,6 +44,7 @@ class CommentMapperTest {
     private CommentEntity comment(Long id, UUID userId, CommentEntity parent) {
         UserEntity user = new UserEntity();
         user.setId(userId);
+        user.setDisplayName("Alex");
 
         CommentEntity comment = new CommentEntity();
         comment.setId(id);

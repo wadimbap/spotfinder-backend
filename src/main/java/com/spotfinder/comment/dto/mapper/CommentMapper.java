@@ -13,6 +13,7 @@ public class CommentMapper {
                     parentComment,
                     comment.getText(),
                     comment.getCreatedBy().getId(),
+                    comment.getCreatedBy().getDisplayName(),
                     comment.getCreatedAt(),
                     comment.getUpdatedAt()
             );
