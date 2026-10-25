@@ -5,9 +5,13 @@ import com.spotfinder.common.exception.CommentOwnershipException;
 import com.spotfinder.common.exception.EmailAlreadyExistsException;
 import com.spotfinder.common.exception.InvalidCommentParentException;
 import com.spotfinder.common.exception.InvalidCredentialsException;
+import com.spotfinder.common.exception.InvalidPhotoException;
 import com.spotfinder.common.exception.PasswordConfirmationMismatchException;
+import com.spotfinder.common.exception.PhotoTooLargeException;
 import com.spotfinder.common.exception.SpotAlreadyApprovedException;
 import com.spotfinder.common.exception.SpotNotFoundException;
+import com.spotfinder.common.exception.SpotPhotoNotFoundException;
+import com.spotfinder.common.exception.UnsupportedPhotoTypeException;
 import com.spotfinder.common.exception.UserNotFoundException;
 import java.time.Instant;
 import java.util.HashMap;
@@ -21,6 +25,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
@@ -124,6 +130,39 @@ public class GlobalExceptionHandler {
                         "ACCESS_DENIED",
                         "Access denied"
                 ));
+    }
+
+    @ExceptionHandler(InvalidPhotoException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidPhoto(InvalidPhotoException exception) {
+        return ResponseEntity.badRequest()
+                .body(ErrorResponse.of("INVALID_PHOTO", exception.getMessage()));
+    }
+
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<ErrorResponse> handleMissingRequestPart(MissingServletRequestPartException exception) {
+        return ResponseEntity.badRequest()
+                .body(ErrorResponse.of(
+                        "MISSING_REQUEST_PART",
+                        "Required request part is missing: " + exception.getRequestPartName()
+                ));
+    }
+
+    @ExceptionHandler(SpotPhotoNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleSpotPhotoNotFound(SpotPhotoNotFoundException exception) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ErrorResponse.of("SPOT_PHOTO_NOT_FOUND", exception.getMessage()));
+    }
+
+    @ExceptionHandler({PhotoTooLargeException.class, MaxUploadSizeExceededException.class})
+    public ResponseEntity<ErrorResponse> handlePhotoTooLarge() {
+        return ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE)
+                .body(ErrorResponse.of("PHOTO_TOO_LARGE", "Photo file is too large"));
+    }
+
+    @ExceptionHandler(UnsupportedPhotoTypeException.class)
+    public ResponseEntity<ErrorResponse> handleUnsupportedPhotoType(UnsupportedPhotoTypeException exception) {
+        return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+                .body(ErrorResponse.of("UNSUPPORTED_PHOTO_TYPE", exception.getMessage()));
     }
 
     @ExceptionHandler(NoHandlerFoundException.class)

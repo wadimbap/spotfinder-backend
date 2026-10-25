@@ -9,7 +9,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.spotfinder.common.exception.InvalidPhotoException;
+import com.spotfinder.common.exception.PhotoTooLargeException;
 import com.spotfinder.common.exception.SpotNotFoundException;
+import com.spotfinder.common.exception.SpotPhotoNotFoundException;
+import com.spotfinder.common.exception.UnsupportedPhotoTypeException;
 import com.spotfinder.spot.dto.SpotPhotoContentResponse;
 import com.spotfinder.spot.dto.SpotPhotoResponse;
 import com.spotfinder.spot.dto.mapper.SpotPhotoMapper;
@@ -183,7 +187,7 @@ class SpotPhotoServiceImplTest {
         when(spotRepository.findById(SPOT_ID)).thenReturn(Optional.of(spotEntity()));
 
         assertThatThrownBy(() -> spotPhotoService.uploadPhoto(USER_ID, SPOT_ID, file))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(InvalidPhotoException.class)
                 .hasMessageContaining("Photo file is required");
 
         verify(objectStorageService, never()).upload(any(), any(), any(Long.class), any());
@@ -205,7 +209,7 @@ class SpotPhotoServiceImplTest {
         when(spotRepository.findById(SPOT_ID)).thenReturn(Optional.of(spotEntity()));
 
         assertThatThrownBy(() -> spotPhotoService.uploadPhoto(USER_ID, SPOT_ID, file))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(PhotoTooLargeException.class)
                 .hasMessageContaining("Photo file is too large");
 
         verify(objectStorageService, never()).upload(any(), any(), any(Long.class), any());
@@ -225,7 +229,7 @@ class SpotPhotoServiceImplTest {
         when(spotRepository.findById(SPOT_ID)).thenReturn(Optional.of(spotEntity()));
 
         assertThatThrownBy(() -> spotPhotoService.uploadPhoto(USER_ID, SPOT_ID, file))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(UnsupportedPhotoTypeException.class)
                 .hasMessageContaining("Unsupported photo content type");
 
         verify(objectStorageService, never()).upload(any(), any(), any(Long.class), any());
@@ -262,6 +266,7 @@ class SpotPhotoServiceImplTest {
         ByteArrayInputStream inputStream = new ByteArrayInputStream("image".getBytes(StandardCharsets.UTF_8));
 
         when(userReader.getByIdOrElseThrow(USER_ID)).thenReturn(userEntity(USER_ID, UserRole.USER));
+        when(spotRepository.findById(SPOT_ID)).thenReturn(Optional.of(spotEntity()));
         when(spotPhotoRepository.findByIdAndSpotId(PHOTO_ID, SPOT_ID)).thenReturn(Optional.of(photo));
         when(objectStorageService.download(photo.getObjectKey())).thenReturn(inputStream);
 
@@ -328,7 +333,7 @@ class SpotPhotoServiceImplTest {
         when(spotPhotoRepository.findByIdAndSpotId(PHOTO_ID, SPOT_ID)).thenReturn(Optional.of(photo));
 
         assertThatThrownBy(() -> spotPhotoService.deletePhoto(USER_ID, SPOT_ID, PHOTO_ID))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(AccessDeniedException.class)
                 .hasMessageContaining("User is not allowed to delete this photo");
 
         verify(objectStorageService, never()).delete(any());
@@ -341,7 +346,7 @@ class SpotPhotoServiceImplTest {
         when(spotPhotoRepository.findByIdAndSpotId(PHOTO_ID, SPOT_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> spotPhotoService.deletePhoto(USER_ID, SPOT_ID, PHOTO_ID))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(SpotPhotoNotFoundException.class)
                 .hasMessageContaining("Spot photo not found");
 
         verify(objectStorageService, never()).delete(any());

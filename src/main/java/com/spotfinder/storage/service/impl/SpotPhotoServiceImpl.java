@@ -1,6 +1,10 @@
 package com.spotfinder.storage.service.impl;
 
+import com.spotfinder.common.exception.InvalidPhotoException;
+import com.spotfinder.common.exception.PhotoTooLargeException;
 import com.spotfinder.common.exception.SpotNotFoundException;
+import com.spotfinder.common.exception.SpotPhotoNotFoundException;
+import com.spotfinder.common.exception.UnsupportedPhotoTypeException;
 import com.spotfinder.spot.dto.SpotPhotoContentResponse;
 import com.spotfinder.spot.dto.SpotPhotoResponse;
 import com.spotfinder.spot.dto.mapper.SpotPhotoMapper;
@@ -85,8 +89,10 @@ public class SpotPhotoServiceImpl implements SpotPhotoService {
     @Override
     @Transactional(readOnly = true)
     public List<SpotPhotoResponse> getSpotPhotos(UUID userId, UUID spotId) {
-        userReader.getByIdOrElseThrow(userId);
-        getSpotByIdOrElseThrow(spotId);
+        UserEntity user = userReader.getByIdOrElseThrow(userId);
+        SpotEntity spot = getSpotByIdOrElseThrow(spotId);
+
+        ensureCanViewPhotos(user, spot);
 
         return spotPhotoRepository.findAllBySpotIdOrderByCreatedAtAsc(spotId)
                 .stream()
@@ -97,7 +103,10 @@ public class SpotPhotoServiceImpl implements SpotPhotoService {
     @Override
     @Transactional(readOnly = true)
     public SpotPhotoContentResponse getPhotoContent(UUID userId, UUID spotId, UUID photoId) {
-        userReader.getByIdOrElseThrow(userId);
+        UserEntity user = userReader.getByIdOrElseThrow(userId);
+        SpotEntity spot = getSpotByIdOrElseThrow(spotId);
+
+        ensureCanViewPhotos(user, spot);
 
         SpotPhotoEntity photo = getPhotoByIdAndSpotIdOrElseThrow(photoId, spotId);
         InputStream inputStream = objectStorageService.download(photo.getObjectKey());
@@ -110,6 +119,20 @@ public class SpotPhotoServiceImpl implements SpotPhotoService {
         );
     }
 
+    private void ensureCanViewPhotos(UserEntity user, SpotEntity spot) {
+        boolean owner = spot.getCreatedBy() != null
+                && user.getId().equals(spot.getCreatedBy().getId());
+
+        boolean allowed = Boolean.TRUE.equals(spot.getApproved())
+                || owner
+                || user.getRole() == UserRole.MODERATOR
+                || user.getRole() == UserRole.ADMIN;
+
+        if (!allowed) {
+            throw new SpotNotFoundException(spot.getId());
+        }
+    }
+
     @Override
     @Transactional
     public void deletePhoto(UUID userId, UUID spotId, UUID photoId) {
@@ -117,7 +140,7 @@ public class SpotPhotoServiceImpl implements SpotPhotoService {
         SpotPhotoEntity photo = getPhotoByIdAndSpotIdOrElseThrow(photoId, spotId);
 
         if (!canDeletePhoto(user, photo)) {
-            throw new IllegalStateException("User is not allowed to delete this photo");
+            throw new AccessDeniedException("User is not allowed to delete this photo");
         }
 
         objectStorageService.delete(photo.getObjectKey());
@@ -126,15 +149,15 @@ public class SpotPhotoServiceImpl implements SpotPhotoService {
 
     private void validateFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("Photo file is required");
+            throw new InvalidPhotoException("Photo file is required");
         }
 
         if (file.getSize() > MAX_FILE_SIZE_BYTES) {
-            throw new IllegalArgumentException("Photo file is too large");
+            throw new PhotoTooLargeException();
         }
 
-        if (!ALLOWED_CONTENT_TYPES.contains(file.getContentType())) {
-            throw new IllegalArgumentException("Unsupported photo content type");
+        if (file.getContentType() == null || !ALLOWED_CONTENT_TYPES.contains(file.getContentType())) {
+            throw new UnsupportedPhotoTypeException();
         }
     }
 
@@ -163,6 +186,6 @@ public class SpotPhotoServiceImpl implements SpotPhotoService {
 
     private SpotPhotoEntity getPhotoByIdAndSpotIdOrElseThrow(UUID photoId, UUID spotId) {
         return spotPhotoRepository.findByIdAndSpotId(photoId, spotId)
-                .orElseThrow(() -> new IllegalArgumentException("Spot photo not found"));
+                .orElseThrow(() -> new SpotPhotoNotFoundException(photoId));
     }
 }

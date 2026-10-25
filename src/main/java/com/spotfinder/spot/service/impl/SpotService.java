@@ -140,7 +140,13 @@ public class SpotService {
 
     @Transactional
     public void rejectSpot(UUID spotId) {
-        deleteSpotById(spotId);
+        SpotEntity spot = getSpotByIdOrElseThrow(spotId);
+
+        if (!Boolean.FALSE.equals(spot.getApproved())) {
+            throw new SpotAlreadyApprovedException(spotId);
+        }
+
+        spotRepository.delete(spot);
     }
 
     @Transactional
