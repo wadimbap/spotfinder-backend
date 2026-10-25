@@ -64,7 +64,7 @@ class SpotApiErrorTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"name":"Spot","latitude":55.75,"longitude":37.62,
-                                 "type":"STREET","features":[]}
+                                 "type":"STREET","features":["FLAT"]}
                                 """))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("SPOT_ALREADY_APPROVED"));
