@@ -1,6 +1,9 @@
 package com.spotfinder.common.error;
 
+import com.spotfinder.common.exception.CommentNotFoundException;
+import com.spotfinder.common.exception.CommentOwnershipException;
 import com.spotfinder.common.exception.EmailAlreadyExistsException;
+import com.spotfinder.common.exception.InvalidCommentParentException;
 import com.spotfinder.common.exception.InvalidCredentialsException;
 import com.spotfinder.common.exception.PasswordConfirmationMismatchException;
 import com.spotfinder.common.exception.SpotNotFoundException;
@@ -14,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.NoHandlerFoundException;
@@ -145,6 +149,50 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.of(
                         "SPOT_NOT_FOUND",
                         exception.getMessage()
+                ));
+    }
+
+    @ExceptionHandler(CommentNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleCommentNotFound(
+            CommentNotFoundException exception
+    ) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ErrorResponse.of(
+                        "COMMENT_NOT_FOUND",
+                        exception.getMessage()
+                ));
+    }
+
+    @ExceptionHandler(InvalidCommentParentException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidCommentParent(
+            InvalidCommentParentException exception
+    ) {
+        return ResponseEntity.badRequest()
+                .body(ErrorResponse.of(
+                        "INVALID_COMMENT_PARENT",
+                        exception.getMessage()
+                ));
+    }
+
+    @ExceptionHandler(CommentOwnershipException.class)
+    public ResponseEntity<ErrorResponse> handleCommentOwnership(
+            CommentOwnershipException exception
+    ) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ErrorResponse.of(
+                        "COMMENT_ACCESS_DENIED",
+                        exception.getMessage()
+                ));
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ErrorResponse> handleMissingRequestParameter(
+            MissingServletRequestParameterException exception
+    ) {
+        return ResponseEntity.badRequest()
+                .body(ErrorResponse.of(
+                        "MISSING_REQUEST_PARAMETER",
+                        "Required request parameter is missing: " + exception.getParameterName()
                 ));
     }
 }
