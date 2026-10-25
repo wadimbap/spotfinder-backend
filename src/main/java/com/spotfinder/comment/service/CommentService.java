@@ -15,11 +15,11 @@ import com.spotfinder.spot.service.impl.SpotReader;
 import com.spotfinder.user.entity.UserEntity;
 import com.spotfinder.user.entity.UserRole;
 import com.spotfinder.user.service.UserReader;
+import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor

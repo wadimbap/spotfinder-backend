@@ -3,9 +3,9 @@ package com.spotfinder.spot.service.impl;
 import com.spotfinder.common.exception.SpotNotFoundException;
 import com.spotfinder.spot.entity.SpotEntity;
 import com.spotfinder.spot.repository.SpotRepository;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor

@@ -13,8 +13,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.spotfinder.auth.security.UserPrincipal;
 import com.spotfinder.auth.security.JwtService;
+import com.spotfinder.auth.security.UserPrincipal;
 import com.spotfinder.comment.dto.CommentResponse;
 import com.spotfinder.comment.service.CommentService;
 import com.spotfinder.common.error.GlobalExceptionHandler;

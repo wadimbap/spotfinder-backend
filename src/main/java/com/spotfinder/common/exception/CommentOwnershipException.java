@@ -1,8 +1,8 @@
 package com.spotfinder.common.exception;
 
+import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
-import java.util.UUID;
 
 @ResponseStatus(value = HttpStatus.FORBIDDEN, reason = "Вы не можете изменить чужой комментарий")
 public class CommentOwnershipException extends RuntimeException {
