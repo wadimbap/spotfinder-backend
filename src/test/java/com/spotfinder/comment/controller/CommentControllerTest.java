@@ -2,11 +2,13 @@ package com.spotfinder.comment.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -18,6 +20,7 @@ import com.spotfinder.auth.security.UserPrincipal;
 import com.spotfinder.comment.dto.CommentResponse;
 import com.spotfinder.comment.service.CommentService;
 import com.spotfinder.common.error.GlobalExceptionHandler;
+import com.spotfinder.common.exception.CommentDeletedException;
 import com.spotfinder.common.exception.CommentNotFoundException;
 import com.spotfinder.common.exception.CommentOwnershipException;
 import com.spotfinder.common.exception.InvalidCommentParentException;
@@ -188,8 +191,52 @@ class CommentControllerTest {
                 USER_ID,
                 "Alex",
                 Instant.parse("2026-08-23T10:00:00Z"),
-                Instant.parse("2026-08-23T10:00:00Z")
+                Instant.parse("2026-08-23T10:00:00Z"),
+                null,
+                null
         );
+    }
+
+    @Test
+    void deleteComment_shouldReturnNoContent() throws Exception {
+        mockMvc.perform(delete("/api/v1/comment/1"))
+                .andExpect(status().isNoContent());
+        verify(commentService).deleteComment(USER_ID, 1L);
+    }
+
+    @Test
+    void deleteComment_shouldRejectMalformedId() throws Exception {
+        mockMvc.perform(delete("/api/v1/comment/not-a-number"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST_PARAMETER"));
+        verifyNoInteractions(commentService);
+    }
+
+    @Test
+    void deleteComment_shouldReturnForbiddenForAnotherAuthorsComment() throws Exception {
+        doThrow(new CommentOwnershipException(USER_ID)).when(commentService).deleteComment(USER_ID, 1L);
+
+        mockMvc.perform(delete("/api/v1/comment/1"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void deleteComment_shouldReturnNotFoundForMissingComment() throws Exception {
+        doThrow(new CommentNotFoundException(1L)).when(commentService).deleteComment(USER_ID, 1L);
+
+        mockMvc.perform(delete("/api/v1/comment/1"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("COMMENT_NOT_FOUND"));
+    }
+
+    @Test
+    void updateComment_shouldReturnConflictForDeletedComment() throws Exception {
+        when(commentService.updateComment(eq(USER_ID), any())).thenThrow(new CommentDeletedException(1L));
+
+        mockMvc.perform(put("/api/v1/comment").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"id\":1,\"text\":\"Changed\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("COMMENT_DELETED"));
     }
 
     @TestConfiguration(proxyBeanMethods = false)

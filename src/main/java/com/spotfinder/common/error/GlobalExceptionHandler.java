@@ -1,5 +1,6 @@
 package com.spotfinder.common.error;
 
+import com.spotfinder.common.exception.CommentDeletedException;
 import com.spotfinder.common.exception.CommentNotFoundException;
 import com.spotfinder.common.exception.CommentOwnershipException;
 import com.spotfinder.common.exception.EmailAlreadyExistsException;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.NoHandlerFoundException;
@@ -214,6 +216,12 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+    @ExceptionHandler(CommentDeletedException.class)
+    public ResponseEntity<ErrorResponse> handleCommentDeleted(CommentDeletedException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ErrorResponse.of("COMMENT_DELETED", exception.getMessage()));
+    }
+
     @ExceptionHandler(InvalidCommentParentException.class)
     public ResponseEntity<ErrorResponse> handleInvalidCommentParent(
             InvalidCommentParentException exception
@@ -244,6 +252,14 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.of(
                         "MISSING_REQUEST_PARAMETER",
                         "Required request parameter is missing: " + exception.getParameterName()
+                ));
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidParameter(MethodArgumentTypeMismatchException exception) {
+        return ResponseEntity.badRequest()
+                .body(ErrorResponse.of(
+                        "INVALID_REQUEST_PARAMETER", "Invalid request parameter: " + exception.getName()
                 ));
     }
 }

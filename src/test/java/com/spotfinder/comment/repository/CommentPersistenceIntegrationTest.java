@@ -87,6 +87,59 @@ class CommentPersistenceIntegrationTest {
         return DriverManager.getConnection(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
     }
 
+    @Test
+    void upgrade_shouldPreserveExistingCommentsAndBackfillOnlyPreviouslyEditedOnes() throws Exception {
+        String schema = "comment_upgrade_" + UUID.randomUUID().toString().replace("-", "");
+        Flyway.configure()
+                .dataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword())
+                .locations("filesystem:src/main/resources/db/migration")
+                .schemas(schema).defaultSchema(schema).target("20260823.01")
+                .load().migrate();
+
+        UUID userId = UUID.randomUUID();
+        UUID spotId = UUID.randomUUID();
+        OffsetDateTime createdAt = OffsetDateTime.parse("2026-08-23T10:00:00Z");
+        OffsetDateTime editedAt = createdAt.plusHours(1);
+        try (Connection connection = connection()) {
+            connection.setSchema(schema);
+            insertUser(connection, userId);
+            insertSpot(connection, spotId, userId);
+            long rootId = insertComment(connection, userId, spotId, "Original root", null, createdAt);
+            long replyId = insertComment(connection, userId, spotId, "Previously edited", rootId, createdAt);
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "update comments set updated_at = ? where id = ?"
+            )) {
+                statement.setObject(1, editedAt);
+                statement.setLong(2, replyId);
+                statement.executeUpdate();
+            }
+
+            Flyway.configure()
+                    .dataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword())
+                    .locations("filesystem:src/main/resources/db/migration")
+                    .schemas(schema).defaultSchema(schema)
+                    .load().migrate();
+
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "select id, parent_comment_id, text, created_by, edited_at, deleted_at from comments order by id"
+            ); ResultSet rows = statement.executeQuery()) {
+                assertThat(rows.next()).isTrue();
+                assertThat(rows.getLong("id")).isEqualTo(rootId);
+                assertThat(rows.getString("text")).isEqualTo("Original root");
+                assertThat(rows.getObject("created_by", UUID.class)).isEqualTo(userId);
+                assertThat(rows.getObject("edited_at")).isNull();
+                assertThat(rows.getObject("deleted_at")).isNull();
+                assertThat(rows.next()).isTrue();
+                assertThat(rows.getLong("id")).isEqualTo(replyId);
+                assertThat(rows.getLong("parent_comment_id")).isEqualTo(rootId);
+                assertThat(rows.getString("text")).isEqualTo("Previously edited");
+                assertThat(rows.getObject("edited_at", OffsetDateTime.class)).isEqualTo(editedAt);
+                assertThat(rows.getObject("deleted_at")).isNull();
+                assertThat(rows.next()).isFalse();
+            }
+        }
+    }
+
     private static void insertUser(Connection connection, UUID userId) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement("""
                 insert into users (id, email, password_hash, display_name, role, enabled, created_at, updated_at)

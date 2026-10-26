@@ -76,6 +76,25 @@ User-created spots are not approved by default.
 
 Admin-created spots are approved automatically.
 
+## Comments
+
+Comments use `GET /api/v1/comment?spotId={uuid}`, `POST /api/v1/comment?spotId={uuid}`,
+`PUT /api/v1/comment`, and `DELETE /api/v1/comment/{commentId}`.
+
+Authors can delete their own comments; moderators and administrators can delete any
+comment they can access. Editing remains author-only. Deleted comments with live
+descendants retain their author, creation date, and a placeholder instead of the
+erased text. Empty deleted subtrees are physically pruned without deleting live
+neighbouring discussions. Replies and edits targeting a deleted placeholder return
+`409 COMMENT_DELETED`. An existing placeholder can be deleted again with `204`;
+a physically removed comment returns `404 COMMENT_NOT_FOUND`.
+
+Responses include nullable `editedAt` and `deletedAt`. Identical-text saves do not
+change `editedAt`. Migration `V20261026_01` adds these fields and preserves the old
+edited indicator using `updatedAt > createdAt`; previously applied migrations are
+unchanged. Comment writes serialize on the spot row to coordinate replies, edits,
+and subtree pruning.
+
 ## Authentication
 
 The API uses JWT Bearer authentication.

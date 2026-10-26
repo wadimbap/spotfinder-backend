@@ -13,7 +13,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -57,5 +59,14 @@ public class CommentController {
     ) {
         CommentResponse response = commentService.updateComment(principal.id(), commentRequest);
         return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{commentId}")
+    public ResponseEntity<Void> deleteComment(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long commentId
+    ) {
+        commentService.deleteComment(principal.id(), commentId);
+        return ResponseEntity.noContent().build();
     }
 }

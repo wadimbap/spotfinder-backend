@@ -11,11 +11,13 @@ public class CommentMapper {
             return new CommentResponse(
                     comment.getId(),
                     parentComment,
-                    comment.getText(),
+                    comment.getDeletedAt() == null ? comment.getText() : "Комментарий удалён",
                     comment.getCreatedBy().getId(),
                     comment.getCreatedBy().getDisplayName(),
                     comment.getCreatedAt(),
-                    comment.getUpdatedAt()
+                    comment.getUpdatedAt(),
+                    comment.getEditedAt(),
+                    comment.getDeletedAt()
             );
         }
 }

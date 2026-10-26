@@ -41,6 +41,25 @@ class CommentMapperTest {
         assertThat(response.parentId()).isEqualTo(1L);
     }
 
+    @Test
+    void toResponse_shouldHideDeletedTextAndRetainAuthorAndTimestamps() {
+        UUID userId = UUID.randomUUID();
+        CommentEntity comment = comment(1L, userId, null);
+        Instant editedAt = Instant.parse("2026-08-23T11:00:00Z");
+        Instant deletedAt = Instant.parse("2026-08-23T12:00:00Z");
+        comment.setEditedAt(editedAt);
+        comment.setDeletedAt(deletedAt);
+
+        CommentResponse response = mapper.toResponse(comment);
+
+        assertThat(response.text()).isEqualTo("Комментарий удалён");
+        assertThat(response.createdByUserId()).isEqualTo(userId);
+        assertThat(response.createdByDisplayName()).isEqualTo("Alex");
+        assertThat(response.editedAt()).isEqualTo(editedAt);
+        assertThat(response.deletedAt()).isEqualTo(deletedAt);
+        assertThat(response.createdAt()).isEqualTo(comment.getCreatedAt());
+    }
+
     private CommentEntity comment(Long id, UUID userId, CommentEntity parent) {
         UserEntity user = new UserEntity();
         user.setId(userId);

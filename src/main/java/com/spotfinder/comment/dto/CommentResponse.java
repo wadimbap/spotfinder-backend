@@ -10,6 +10,8 @@ public record CommentResponse(
         UUID createdByUserId,
         String createdByDisplayName,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        Instant editedAt,
+        Instant deletedAt
 ) {
 }

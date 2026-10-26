@@ -6,6 +6,7 @@ import com.spotfinder.comment.dto.UpdateCommentRequest;
 import com.spotfinder.comment.dto.mapper.CommentMapper;
 import com.spotfinder.comment.entity.CommentEntity;
 import com.spotfinder.comment.repository.CommentRepository;
+import com.spotfinder.common.exception.CommentDeletedException;
 import com.spotfinder.common.exception.CommentNotFoundException;
 import com.spotfinder.common.exception.CommentOwnershipException;
 import com.spotfinder.common.exception.InvalidCommentParentException;
@@ -15,7 +16,9 @@ import com.spotfinder.spot.service.impl.SpotReader;
 import com.spotfinder.user.entity.UserEntity;
 import com.spotfinder.user.entity.UserRole;
 import com.spotfinder.user.service.UserReader;
+import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -49,7 +52,7 @@ public class CommentService {
                                          CreateCommentRequest commentRequest,
                                          UUID spotId) {
         UserEntity user = userReader.getByIdOrElseThrow(userId);
-        SpotEntity spot = spotReader.getByIdOrElseThrow(spotId);
+        SpotEntity spot = spotReader.getByIdForUpdateOrElseThrow(spotId);
 
         ensureCanAccessComments(user, spot);
 
@@ -68,6 +71,7 @@ public class CommentService {
                         commentRequest.parentCommentId()
                 );
             }
+            ensureNotDeleted(parent);
         }
 
         entity.setParentComment(parent);
@@ -85,19 +89,63 @@ public class CommentService {
     @Transactional
     public CommentResponse updateComment(UUID userId, UpdateCommentRequest request) {
         UserEntity user = userReader.getByIdOrElseThrow(userId);
-
-        CommentEntity comment = commentRepository.findById(request.id())
-                .orElseThrow(() -> new CommentNotFoundException(request.id()));
-
-        ensureCanAccessComments(user, comment.getSpot());
+        CommentEntity comment = getCommentForUpdate(user, request.id());
 
         if (!comment.getCreatedBy().getId().equals(userId)) {
             throw new CommentOwnershipException(userId);
         }
 
-        comment.setText(request.text());
+        ensureNotDeleted(comment);
+
+        if (!Objects.equals(comment.getText(), request.text())) {
+            comment.setText(request.text());
+            comment.setEditedAt(Instant.now());
+        }
 
         return commentMapper.toResponse(comment);
+    }
+
+    @Transactional
+    public void deleteComment(UUID userId, Long commentId) {
+        UserEntity user = userReader.getByIdOrElseThrow(userId);
+        CommentEntity comment = getCommentForUpdate(user, commentId);
+
+        if (!comment.getCreatedBy().getId().equals(userId)
+                && user.getRole() != UserRole.MODERATOR && user.getRole() != UserRole.ADMIN) {
+            throw new CommentOwnershipException(userId);
+        }
+
+        if (comment.getDeletedAt() == null) {
+            comment.setText("");
+            comment.setDeletedAt(Instant.now());
+        }
+
+        // Remove leaves first so the self-referencing FK never loses a live child.
+        CommentEntity current = comment;
+        while (current != null && current.getDeletedAt() != null
+                && !commentRepository.existsByParentCommentId(current.getId())) {
+            CommentEntity parent = current.getParentComment();
+            commentRepository.delete(current);
+            commentRepository.flush();
+            current = parent;
+        }
+    }
+
+    private CommentEntity getCommentForUpdate(UserEntity user, Long id) {
+        UUID spotId = commentRepository.findSpotIdById(id)
+                .orElseThrow(() -> new CommentNotFoundException(id));
+        // All comment writes lock the same spot before loading mutable comment state.
+        // A scalar lookup above avoids caching a stale entity while waiting for the lock.
+        SpotEntity spot = spotReader.getByIdForUpdateOrElseThrow(spotId);
+        ensureCanAccessComments(user, spot);
+        return commentRepository.findById(id)
+                .orElseThrow(() -> new CommentNotFoundException(id));
+    }
+
+    private void ensureNotDeleted(CommentEntity comment) {
+        if (comment.getDeletedAt() != null) {
+            throw new CommentDeletedException(comment.getId());
+        }
     }
 
     private void ensureCanAccessComments(UserEntity user, SpotEntity spot) {

@@ -17,4 +17,9 @@ public class SpotReader {
         return spotRepository.findById(spotId)
                 .orElseThrow(() -> new SpotNotFoundException(spotId));
     }
+
+    public SpotEntity getByIdForUpdateOrElseThrow(UUID spotId) {
+        return spotRepository.findByIdForUpdate(spotId)
+                .orElseThrow(() -> new SpotNotFoundException(spotId));
+    }
 }

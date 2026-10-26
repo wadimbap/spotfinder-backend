@@ -1,10 +1,12 @@
 package com.spotfinder.spot.repository;
 
 import com.spotfinder.spot.entity.SpotEntity;
+import jakarta.persistence.LockModeType;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 
 public interface SpotRepository extends JpaRepository<SpotEntity, UUID> {
@@ -19,4 +21,8 @@ public interface SpotRepository extends JpaRepository<SpotEntity, UUID> {
     List<SpotEntity> findAllByCreatedByIdOrderByCreatedAtDesc(UUID userId);
 
     Optional<SpotEntity> findByIdAndCreatedById(UUID spotId, UUID userId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select s from SpotEntity s where s.id = :id")
+    Optional<SpotEntity> findByIdForUpdate(UUID id);
 }
