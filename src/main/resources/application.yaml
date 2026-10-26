@@ -41,7 +41,11 @@ management:
 app:
   jwt:
     secret: ${JWT_SECRET:change-me-change-me-change-me-change-me-change-me}
-    expiration-minutes: ${JWT_EXPIRATION_MINUTES:60}
+    expiration-minutes: ${JWT_EXPIRATION_MINUTES:15}
+
+  auth:
+    cookie-secure: ${AUTH_COOKIE_SECURE:true}
+    allowed-origins: ${AUTH_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173,http://127.0.0.1:4173,http://localhost:8080,http://127.0.0.1:8080}
 
 logging:
   level:

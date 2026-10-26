@@ -7,6 +7,7 @@ import com.spotfinder.common.exception.EmailAlreadyExistsException;
 import com.spotfinder.common.exception.InvalidCommentParentException;
 import com.spotfinder.common.exception.InvalidCredentialsException;
 import com.spotfinder.common.exception.InvalidPhotoException;
+import com.spotfinder.common.exception.InvalidRefreshTokenException;
 import com.spotfinder.common.exception.PasswordConfirmationMismatchException;
 import com.spotfinder.common.exception.PhotoTooLargeException;
 import com.spotfinder.common.exception.SpotAlreadyApprovedException;
@@ -23,6 +24,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -260,6 +262,25 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest()
                 .body(ErrorResponse.of(
                         "INVALID_REQUEST_PARAMETER", "Invalid request parameter: " + exception.getName()
+                ));
+    }
+
+    @ExceptionHandler(InvalidRefreshTokenException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidRefreshToken(
+            InvalidRefreshTokenException exception
+    ) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ErrorResponse.of("REFRESH_INVALID", exception.getMessage()));
+    }
+
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public ResponseEntity<ErrorResponse> handleMissingRequestHeader(
+            MissingRequestHeaderException exception
+    ) {
+        return ResponseEntity.badRequest()
+                .body(ErrorResponse.of(
+                        "MISSING_REQUEST_HEADER",
+                        "Required request header is missing: " + exception.getHeaderName()
                 ));
     }
 }

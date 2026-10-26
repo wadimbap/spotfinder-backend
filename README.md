@@ -99,6 +99,16 @@ and subtree pruning.
 
 The API uses JWT Bearer authentication.
 
+Access tokens last 15 minutes. Login and registration also set an HttpOnly refresh
+cookie: sessions last 30 days without refresh and at most 90 days after login.
+`POST /api/v1/auth/refresh` renews access; `POST /api/v1/auth/logout` revokes the
+current browser session. Other devices remain signed in. See
+[session configuration, HTTP contract, tests and HTTPS rollout](docs/auth-sessions.md).
+
+For local HTTP development set `AUTH_COOKIE_SECURE=false`. Stage/production require
+HTTPS and an explicit `AUTH_ALLOWED_ORIGINS`; the external TLS proxy must be
+configured before deploying the updated HTTPS frontend.
+
 Example header:
 
     Authorization: Bearer <accessToken>

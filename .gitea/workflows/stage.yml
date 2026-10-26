@@ -87,6 +87,9 @@ jobs:
             -e SPRING_DATASOURCE_USERNAME=admin \
             -e SPRING_DATASOURCE_PASSWORD=admin \
             -e SERVER_PORT=8080 \
+            -e JWT_EXPIRATION_MINUTES=15 \
+            -e AUTH_COOKIE_SECURE=true \
+            -e AUTH_ALLOWED_ORIGINS=https://stage.deployflow.ru,https://stage-api.deployflow.ru \
             -e MINIO_ENDPOINT=http://spotfinder-stage-minio:9000 \
             -e MINIO_ACCESS_KEY=admin \
             -e MINIO_SECRET_KEY=adminadmin \
