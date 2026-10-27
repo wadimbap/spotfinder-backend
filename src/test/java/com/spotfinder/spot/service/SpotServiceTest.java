@@ -7,7 +7,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.spotfinder.common.exception.SpotAlreadyApprovedException;
 import com.spotfinder.common.exception.SpotNotFoundException;
 import com.spotfinder.common.exception.UserNotFoundException;
 import com.spotfinder.spot.dto.CreateSpotRequest;
