@@ -281,6 +281,26 @@ class SpotServiceTest {
     }
 
     @Test
+    void getAllApprovedSpotsForAdmin_shouldReturnApprovedSpots() {
+        SpotEntity firstSpot = spotEntity(true);
+        SpotEntity secondSpot = spotEntity(true);
+        SpotResponse firstResponse = spotResponse(true);
+        SpotResponse secondResponse = spotResponse(true);
+
+        when(spotRepository.getAllApprovedSpots()).thenReturn(List.of(firstSpot, secondSpot));
+        when(spotMapper.toResponse(firstSpot)).thenReturn(firstResponse);
+        when(spotMapper.toResponse(secondSpot)).thenReturn(secondResponse);
+
+        List<SpotResponse> actualResponses = spotService.getAllApprovedSpotsForAdmin();
+
+        assertThat(actualResponses).isEqualTo(List.of(firstResponse, secondResponse));
+
+        verify(spotRepository).getAllApprovedSpots();
+        verify(spotMapper).toResponse(firstSpot);
+        verify(spotMapper).toResponse(secondSpot);
+    }
+
+    @Test
     void getSpotByIdForAdmin_shouldReturnSpotResponse() {
         SpotEntity spot = spotEntity(false);
         SpotResponse expectedResponse = spotResponse(false);
@@ -499,6 +519,32 @@ class SpotServiceTest {
         verify(userReader).getByIdOrElseThrow(USER_ID);
         verify(spotRepository).findByIdAndCreatedById(SPOT_ID, USER_ID);
         verify(spotMapper, never()).toResponse(any(SpotEntity.class));
+    }
+
+    @Test
+    void updateSpotForAdmin_shouldUpdateApprovedSpotAndKeepApprovalAndCreator() {
+        SpotEntity spot = spotEntity(true);
+        UserEntity creator = spot.getCreatedBy();
+        UpdateSpotRequest request = updateSpotRequest();
+        SpotResponse expectedResponse = spotResponse(true);
+
+        when(spotRepository.findById(SPOT_ID)).thenReturn(Optional.of(spot));
+        when(spotMapper.toResponse(spot)).thenReturn(expectedResponse);
+
+        SpotResponse actualResponse = spotService.updateSpotForAdmin(SPOT_ID, request);
+
+        assertThat(actualResponse).isEqualTo(expectedResponse);
+        assertThat(spot.getName()).isEqualTo("Updated Spot");
+        assertThat(spot.getDescription()).isEqualTo("Updated description");
+        assertThat(spot.getLatitude()).isEqualTo(59.852079);
+        assertThat(spot.getLongitude()).isEqualTo(30.322437);
+        assertThat(spot.getType()).isEqualTo(SpotType.SKATEPARK);
+        assertThat(spot.getFeatures()).isEqualTo(Set.of(SpotFeature.RAIL, SpotFeature.LEDGE));
+        assertThat(spot.getApproved()).isTrue();
+        assertThat(spot.getCreatedBy()).isSameAs(creator);
+
+        verify(spotRepository).findById(SPOT_ID);
+        verify(spotMapper).toResponse(spot);
     }
 
     private CreateSpotRequest createSpotRequest() {

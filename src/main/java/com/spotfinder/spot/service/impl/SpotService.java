@@ -97,16 +97,7 @@ public class SpotService {
             throw new SpotAlreadyApprovedException(spotId);
         }
 
-        spot.setName(request.name().trim());
-        spot.setDescription(request.description());
-        spot.setLatitude(request.latitude());
-        spot.setLongitude(request.longitude());
-        spot.setType(request.type());
-        spot.setFeatures(
-                request.features() == null
-                        ? new HashSet<>()
-                        : new HashSet<>(request.features())
-        );
+        applyUpdate(spot, request);
 
         return spotMapper.toResponse(spot);
     }
@@ -121,8 +112,24 @@ public class SpotService {
     }
 
     @Transactional(readOnly = true)
+    public List<SpotResponse> getAllApprovedSpotsForAdmin() {
+        return spotRepository.getAllApprovedSpots()
+                .stream()
+                .map(spotMapper::toResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public SpotResponse getSpotByIdForAdmin(UUID spotId) {
         SpotEntity spot = getSpotByIdOrElseThrow(spotId);
+
+        return spotMapper.toResponse(spot);
+    }
+
+    @Transactional
+    public SpotResponse updateSpotForAdmin(UUID spotId, UpdateSpotRequest request) {
+        SpotEntity spot = getSpotByIdOrElseThrow(spotId);
+        applyUpdate(spot, request);
 
         return spotMapper.toResponse(spot);
     }
@@ -157,6 +164,19 @@ public class SpotService {
     private void deleteSpotById(UUID spotId) {
         SpotEntity spot = getSpotByIdOrElseThrow(spotId);
         spotRepository.delete(spot);
+    }
+
+    private void applyUpdate(SpotEntity spot, UpdateSpotRequest request) {
+        spot.setName(request.name().trim());
+        spot.setDescription(request.description());
+        spot.setLatitude(request.latitude());
+        spot.setLongitude(request.longitude());
+        spot.setType(request.type());
+        spot.setFeatures(
+                request.features() == null
+                        ? new HashSet<>()
+                        : new HashSet<>(request.features())
+        );
     }
 
     private SpotEntity getSpotByIdOrElseThrow(UUID spotId) {

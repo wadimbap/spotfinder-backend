@@ -3,6 +3,7 @@ package com.spotfinder.spot.controller;
 import com.spotfinder.auth.security.UserPrincipal;
 import com.spotfinder.spot.dto.CreateSpotRequest;
 import com.spotfinder.spot.dto.SpotResponse;
+import com.spotfinder.spot.dto.UpdateSpotRequest;
 import com.spotfinder.spot.service.impl.SpotService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -41,6 +43,21 @@ public class SpotAdminController {
     public ResponseEntity<List<SpotResponse>> getAllPendingSpots() {
         List<SpotResponse> responses = spotService.getAllPendingSpotsForAdmin();
         return ResponseEntity.ok(responses);
+    }
+
+    @GetMapping("/approved")
+    public ResponseEntity<List<SpotResponse>> getAllApprovedSpots() {
+        List<SpotResponse> responses = spotService.getAllApprovedSpotsForAdmin();
+        return ResponseEntity.ok(responses);
+    }
+
+    @PutMapping("/{spotId}")
+    public ResponseEntity<SpotResponse> updateSpot(
+            @PathVariable UUID spotId,
+            @Valid @RequestBody UpdateSpotRequest request
+    ) {
+        SpotResponse response = spotService.updateSpotForAdmin(spotId, request);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{spotId}")
