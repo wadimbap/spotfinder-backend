@@ -62,8 +62,8 @@ class SpotApiErrorTest {
     }
 
     @Test
-    void updateApprovedSpot_shouldReturnConflict() throws Exception {
-        when(spotService.updateMyPendingSpot(any(), any(), any()))
+    void spotAlreadyApprovedException_shouldReturnConflict() throws Exception {
+        when(spotService.updateMySpot(any(), any(), any()))
                 .thenThrow(new SpotAlreadyApprovedException(spotId));
 
         mockMvc.perform(put("/api/v1/spots/{spotId}", spotId)

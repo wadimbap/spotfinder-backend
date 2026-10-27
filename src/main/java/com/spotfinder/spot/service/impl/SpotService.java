@@ -104,15 +104,11 @@ public class SpotService {
     }
 
     @Transactional
-    public SpotResponse updateMyPendingSpot(UUID userId, UUID spotId, UpdateSpotRequest request) {
+    public SpotResponse updateMySpot(UUID userId, UUID spotId, UpdateSpotRequest request) {
         userReader.getByIdOrElseThrow(userId);
 
         SpotEntity spot = spotRepository.findByIdAndCreatedById(spotId, userId)
                 .orElseThrow(() -> new SpotNotFoundException(spotId));
-
-        if (Boolean.TRUE.equals(spot.getApproved())) {
-            throw new SpotAlreadyApprovedException(spotId);
-        }
 
         applyUpdate(spot, request);
 

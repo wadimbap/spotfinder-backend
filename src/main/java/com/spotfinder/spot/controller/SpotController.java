@@ -49,12 +49,12 @@ public class SpotController {
     }
 
     @PutMapping("/{spotId}")
-    public ResponseEntity<SpotResponse> updateMyPendingSpot(
+    public ResponseEntity<SpotResponse> updateMySpot(
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable UUID spotId,
             @Valid @RequestBody UpdateSpotRequest request
     ) {
-        SpotResponse response = spotService.updateMyPendingSpot(
+        SpotResponse response = spotService.updateMySpot(
                 principal.id(),
                 spotId,
                 request);

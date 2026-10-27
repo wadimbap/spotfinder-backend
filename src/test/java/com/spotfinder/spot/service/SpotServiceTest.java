@@ -488,7 +488,7 @@ class SpotServiceTest {
     }
 
     @Test
-    void updateMyPendingSpot_shouldUpdateOwnPendingSpot() {
+    void updateMySpot_shouldUpdateOwnPendingSpot() {
         SpotEntity spot = spotEntity(false);
         UpdateSpotRequest request = updateSpotRequest();
         SpotResponse expectedResponse = spotResponse(false);
@@ -497,7 +497,7 @@ class SpotServiceTest {
         when(spotRepository.findByIdAndCreatedById(SPOT_ID, USER_ID)).thenReturn(Optional.of(spot));
         when(spotMapper.toResponse(spot)).thenReturn(expectedResponse);
 
-        SpotResponse actualResponse = spotService.updateMyPendingSpot(USER_ID, SPOT_ID, request);
+        SpotResponse actualResponse = spotService.updateMySpot(USER_ID, SPOT_ID, request);
 
         assertThat(actualResponse).isEqualTo(expectedResponse);
 
@@ -514,13 +514,13 @@ class SpotServiceTest {
     }
 
     @Test
-    void updateMyPendingSpot_shouldThrowWhenSpotNotFound() {
+    void updateMySpot_shouldThrowWhenSpotNotFound() {
         UpdateSpotRequest request = updateSpotRequest();
 
         when(userReader.getByIdOrElseThrow(USER_ID)).thenReturn(userEntity());
         when(spotRepository.findByIdAndCreatedById(SPOT_ID, USER_ID)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> spotService.updateMyPendingSpot(USER_ID, SPOT_ID, request))
+        assertThatThrownBy(() -> spotService.updateMySpot(USER_ID, SPOT_ID, request))
                 .isInstanceOf(SpotNotFoundException.class)
                 .hasMessageContaining(SPOT_ID.toString());
 
@@ -530,20 +530,24 @@ class SpotServiceTest {
     }
 
     @Test
-    void updateMyPendingSpot_shouldThrowWhenSpotAlreadyApproved() {
+    void updateMySpot_shouldUpdateOwnApprovedSpotWithoutChangingApproval() {
         SpotEntity spot = spotEntity(true);
         UpdateSpotRequest request = updateSpotRequest();
 
         when(userReader.getByIdOrElseThrow(USER_ID)).thenReturn(userEntity());
         when(spotRepository.findByIdAndCreatedById(SPOT_ID, USER_ID)).thenReturn(Optional.of(spot));
 
-        assertThatThrownBy(() -> spotService.updateMyPendingSpot(USER_ID, SPOT_ID, request))
-                .isInstanceOf(SpotAlreadyApprovedException.class)
-                .hasMessageContaining(SPOT_ID.toString());
+        when(spotMapper.toResponse(spot)).thenReturn(spotResponse(true));
+
+        SpotResponse actualResponse = spotService.updateMySpot(USER_ID, SPOT_ID, request);
+
+        assertThat(actualResponse.approved()).isTrue();
+        assertThat(spot.getApproved()).isTrue();
+        assertThat(spot.getName()).isEqualTo("Updated Spot");
 
         verify(userReader).getByIdOrElseThrow(USER_ID);
         verify(spotRepository).findByIdAndCreatedById(SPOT_ID, USER_ID);
-        verify(spotMapper, never()).toResponse(any(SpotEntity.class));
+        verify(spotMapper).toResponse(spot);
     }
 
     @Test
