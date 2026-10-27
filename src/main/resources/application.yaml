@@ -6,6 +6,11 @@ spring:
     resources:
       add-mappings: false
 
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/spotfinder}
     username: ${SPRING_DATASOURCE_USERNAME:admin}
