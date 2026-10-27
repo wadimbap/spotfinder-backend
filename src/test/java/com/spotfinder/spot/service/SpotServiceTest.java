@@ -34,6 +34,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.jpa.domain.Specification;
 
 @ExtendWith(MockitoExtension.class)
 class SpotServiceTest {
@@ -211,6 +212,30 @@ class SpotServiceTest {
         verify(userReader).getByIdOrElseThrow(USER_ID);
         verify(spotRepository, never()).getAllApprovedSpots();
         verify(spotMapper, never()).toResponse(any(SpotEntity.class));
+    }
+
+    @Test
+    void getAllApprovedSpots_shouldUseDatabaseFilterWhenCriteriaAreProvided() {
+        UserEntity user = userEntity();
+        SpotEntity spot = spotEntity(true);
+        SpotResponse expectedResponse = spotResponse(true);
+
+        when(userReader.getByIdOrElseThrow(USER_ID)).thenReturn(user);
+        when(spotRepository.findAll(any(Specification.class))).thenReturn(List.of(spot));
+        when(spotMapper.toResponse(spot)).thenReturn(expectedResponse);
+
+        List<SpotResponse> actualResponses = spotService.getAllApprovedSpots(
+                USER_ID,
+                "central",
+                List.of(SpotType.STREET),
+                List.of(SpotFeature.RAIL, SpotFeature.LIGHTING));
+
+        assertThat(actualResponses).isEqualTo(List.of(expectedResponse));
+
+        verify(userReader).getByIdOrElseThrow(USER_ID);
+        verify(spotRepository).findAll(any(Specification.class));
+        verify(spotRepository, never()).getAllApprovedSpots();
+        verify(spotMapper).toResponse(spot);
     }
 
     @Test

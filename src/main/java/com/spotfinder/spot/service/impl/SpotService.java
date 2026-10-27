@@ -7,7 +7,10 @@ import com.spotfinder.spot.dto.SpotResponse;
 import com.spotfinder.spot.dto.UpdateSpotRequest;
 import com.spotfinder.spot.dto.mapper.SpotMapper;
 import com.spotfinder.spot.entity.SpotEntity;
+import com.spotfinder.spot.entity.SpotFeature;
+import com.spotfinder.spot.entity.SpotType;
 import com.spotfinder.spot.repository.SpotRepository;
+import com.spotfinder.spot.repository.SpotSpecifications;
 import com.spotfinder.user.entity.UserEntity;
 import com.spotfinder.user.service.UserReader;
 import java.util.HashSet;
@@ -59,9 +62,23 @@ public class SpotService {
 
     @Transactional(readOnly = true)
     public List<SpotResponse> getAllApprovedSpots(UUID userId) {
+        return getAllApprovedSpots(userId, null, List.of(), List.of());
+    }
+
+    @Transactional(readOnly = true)
+    public List<SpotResponse> getAllApprovedSpots(
+            UUID userId,
+            String query,
+            List<SpotType> types,
+            List<SpotFeature> features
+    ) {
         userReader.getByIdOrElseThrow(userId);
 
-        return spotRepository.getAllApprovedSpots()
+        List<SpotEntity> spots = hasFilters(query, types, features)
+                ? spotRepository.findAll(SpotSpecifications.approvedMatching(query, types, features))
+                : spotRepository.getAllApprovedSpots();
+
+        return spots
                 .stream()
                 .map(spotMapper::toResponse)
                 .toList();
@@ -177,6 +194,16 @@ public class SpotService {
                         ? new HashSet<>()
                         : new HashSet<>(request.features())
         );
+    }
+
+    private boolean hasFilters(
+            String query,
+            List<SpotType> types,
+            List<SpotFeature> features
+    ) {
+        return (query != null && !query.isBlank())
+                || (types != null && !types.isEmpty())
+                || (features != null && !features.isEmpty());
     }
 
     private SpotEntity getSpotByIdOrElseThrow(UUID spotId) {

@@ -1,8 +1,11 @@
 package com.spotfinder.common.error;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -12,9 +15,12 @@ import com.spotfinder.auth.security.UserPrincipal;
 import com.spotfinder.common.exception.SpotAlreadyApprovedException;
 import com.spotfinder.spot.controller.SpotController;
 import com.spotfinder.spot.controller.SpotPhotoController;
+import com.spotfinder.spot.entity.SpotFeature;
+import com.spotfinder.spot.entity.SpotType;
 import com.spotfinder.spot.service.SpotPhotoService;
 import com.spotfinder.spot.service.impl.SpotService;
 import com.spotfinder.user.entity.UserRole;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -68,6 +74,24 @@ class SpotApiErrorTest {
                                 """))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("SPOT_ALREADY_APPROVED"));
+    }
+
+    @Test
+    void listApprovedSpots_shouldPassSearchFilters() throws Exception {
+        when(spotService.getAllApprovedSpots(
+                eq(userId), eq("plaza"), eq(List.of(SpotType.STREET)),
+                eq(List.of(SpotFeature.RAIL, SpotFeature.LIGHTING))))
+                .thenReturn(List.of());
+
+        mockMvc.perform(get("/api/v1/spots")
+                        .param("query", "plaza")
+                        .param("type", "STREET")
+                        .param("feature", "RAIL", "LIGHTING"))
+                .andExpect(status().isOk());
+
+        verify(spotService).getAllApprovedSpots(
+                userId, "plaza", List.of(SpotType.STREET),
+                List.of(SpotFeature.RAIL, SpotFeature.LIGHTING));
     }
 
     @Test

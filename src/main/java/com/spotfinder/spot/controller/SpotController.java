@@ -4,6 +4,8 @@ import com.spotfinder.auth.security.UserPrincipal;
 import com.spotfinder.spot.dto.CreateSpotRequest;
 import com.spotfinder.spot.dto.SpotResponse;
 import com.spotfinder.spot.dto.UpdateSpotRequest;
+import com.spotfinder.spot.entity.SpotFeature;
+import com.spotfinder.spot.entity.SpotType;
 import com.spotfinder.spot.service.impl.SpotService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -61,9 +64,13 @@ public class SpotController {
 
     @GetMapping
     public ResponseEntity<List<SpotResponse>> getAllApprovedSpots(
-            @AuthenticationPrincipal UserPrincipal principal
+            @AuthenticationPrincipal UserPrincipal principal,
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false) List<SpotType> type,
+            @RequestParam(required = false) List<SpotFeature> feature
     ) {
-        List<SpotResponse> responses = spotService.getAllApprovedSpots(principal.id());
+        List<SpotResponse> responses = spotService.getAllApprovedSpots(
+                principal.id(), query, type, feature);
         return ResponseEntity.ok(responses);
     }
 
