@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -37,6 +38,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
@@ -89,7 +91,7 @@ class SpotPhotoServiceImplTest {
         SpotPhotoResponse expectedResponse = photoResponse();
 
         when(userReader.getByIdOrElseThrow(USER_ID)).thenReturn(user);
-        when(spotRepository.findById(SPOT_ID)).thenReturn(Optional.of(spot));
+        when(spotRepository.findByIdForUpdate(SPOT_ID)).thenReturn(Optional.of(spot));
         when(spotPhotoRepository.save(any(SpotPhotoEntity.class)))
                 .thenAnswer(invocation -> {
                     SpotPhotoEntity photo = invocation.getArgument(0);
@@ -101,6 +103,7 @@ class SpotPhotoServiceImplTest {
         SpotPhotoResponse actualResponse = spotPhotoService.uploadPhoto(USER_ID, SPOT_ID, file);
 
         assertThat(actualResponse).isEqualTo(expectedResponse);
+        assertThat(spot.getApproved()).isFalse();
 
         ArgumentCaptor<String> objectKeyCaptor = ArgumentCaptor.forClass(String.class);
         verify(objectStorageService).upload(
@@ -133,7 +136,7 @@ class SpotPhotoServiceImplTest {
         MultipartFile file = imageFile();
 
         when(userReader.getByIdOrElseThrow(USER_ID)).thenReturn(userEntity(USER_ID, UserRole.USER));
-        when(spotRepository.findById(SPOT_ID)).thenReturn(Optional.empty());
+        when(spotRepository.findByIdForUpdate(SPOT_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> spotPhotoService.uploadPhoto(USER_ID, SPOT_ID, file))
                 .isInstanceOf(SpotNotFoundException.class)
@@ -153,7 +156,7 @@ class SpotPhotoServiceImplTest {
     void uploadPhoto_shouldRejectNonOwnerRegardlessOfRole(UserRole role) {
         when(userReader.getByIdOrElseThrow(OTHER_USER_ID))
                 .thenReturn(userEntity(OTHER_USER_ID, role));
-        when(spotRepository.findById(SPOT_ID)).thenReturn(Optional.of(spotEntity()));
+        when(spotRepository.findByIdForUpdate(SPOT_ID)).thenReturn(Optional.of(spotEntity()));
 
         assertThatThrownBy(() -> spotPhotoService.uploadPhoto(OTHER_USER_ID, SPOT_ID, imageFile()))
                 .isInstanceOf(AccessDeniedException.class);
@@ -166,7 +169,7 @@ class SpotPhotoServiceImplTest {
         SpotEntity spot = spotEntity();
         spot.setCreatedBy(null);
         when(userReader.getByIdOrElseThrow(USER_ID)).thenReturn(userEntity(USER_ID, UserRole.USER));
-        when(spotRepository.findById(SPOT_ID)).thenReturn(Optional.of(spot));
+        when(spotRepository.findByIdForUpdate(SPOT_ID)).thenReturn(Optional.of(spot));
 
         assertThatThrownBy(() -> spotPhotoService.uploadPhoto(USER_ID, SPOT_ID, imageFile()))
                 .isInstanceOf(AccessDeniedException.class);
@@ -184,7 +187,7 @@ class SpotPhotoServiceImplTest {
         );
 
         when(userReader.getByIdOrElseThrow(USER_ID)).thenReturn(userEntity(USER_ID, UserRole.USER));
-        when(spotRepository.findById(SPOT_ID)).thenReturn(Optional.of(spotEntity()));
+        when(spotRepository.findByIdForUpdate(SPOT_ID)).thenReturn(Optional.of(spotEntity()));
 
         assertThatThrownBy(() -> spotPhotoService.uploadPhoto(USER_ID, SPOT_ID, file))
                 .isInstanceOf(InvalidPhotoException.class)
@@ -206,7 +209,7 @@ class SpotPhotoServiceImplTest {
         );
 
         when(userReader.getByIdOrElseThrow(USER_ID)).thenReturn(userEntity(USER_ID, UserRole.USER));
-        when(spotRepository.findById(SPOT_ID)).thenReturn(Optional.of(spotEntity()));
+        when(spotRepository.findByIdForUpdate(SPOT_ID)).thenReturn(Optional.of(spotEntity()));
 
         assertThatThrownBy(() -> spotPhotoService.uploadPhoto(USER_ID, SPOT_ID, file))
                 .isInstanceOf(PhotoTooLargeException.class)
@@ -226,7 +229,7 @@ class SpotPhotoServiceImplTest {
         );
 
         when(userReader.getByIdOrElseThrow(USER_ID)).thenReturn(userEntity(USER_ID, UserRole.USER));
-        when(spotRepository.findById(SPOT_ID)).thenReturn(Optional.of(spotEntity()));
+        when(spotRepository.findByIdForUpdate(SPOT_ID)).thenReturn(Optional.of(spotEntity()));
 
         assertThatThrownBy(() -> spotPhotoService.uploadPhoto(USER_ID, SPOT_ID, file))
                 .isInstanceOf(UnsupportedPhotoTypeException.class)
@@ -353,6 +356,53 @@ class SpotPhotoServiceImplTest {
         verify(spotPhotoRepository, never()).delete(any(SpotPhotoEntity.class));
     }
 
+    @ParameterizedTest
+    @CsvSource({
+            "USER,true,false", "USER,false,false", "MODERATOR,true,true",
+            "MODERATOR,false,false", "ADMIN,true,true", "ADMIN,false,false"
+    })
+    void uploadPhoto_shouldApplyModerationAccordingToOwnerRole(
+            UserRole role, boolean approved, boolean expectedApproval) {
+        SpotEntity spot = spotEntity();
+        spot.setApproved(approved);
+        when(userReader.getByIdOrElseThrow(USER_ID)).thenReturn(userEntity(USER_ID, role));
+        when(spotRepository.findByIdForUpdate(SPOT_ID)).thenReturn(Optional.of(spot));
+        when(spotPhotoRepository.save(any(SpotPhotoEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        spotPhotoService.uploadPhoto(USER_ID, SPOT_ID, imageFile());
+
+        assertThat(spot.getApproved()).isEqualTo(expectedApproval);
+    }
+
+    @Test
+    void uploadPhoto_shouldKeepApprovalWhenStorageFails() {
+        SpotEntity spot = spotEntity();
+        when(userReader.getByIdOrElseThrow(USER_ID)).thenReturn(userEntity(USER_ID, UserRole.USER));
+        when(spotRepository.findByIdForUpdate(SPOT_ID)).thenReturn(Optional.of(spot));
+        doThrow(new IllegalStateException("Storage unavailable"))
+                .when(objectStorageService).upload(any(), any(), eq(imageFile().getSize()), eq("image/jpeg"));
+
+        assertThatThrownBy(() -> spotPhotoService.uploadPhoto(USER_ID, SPOT_ID, imageFile()))
+                .isInstanceOf(IllegalStateException.class);
+
+        assertThat(spot.getApproved()).isTrue();
+        verifyNoInteractions(spotPhotoRepository, spotPhotoMapper);
+    }
+
+    @Test
+    void uploadPhoto_shouldKeepApprovalWhenPhotoMetadataCannotBeSaved() {
+        SpotEntity spot = spotEntity();
+        when(userReader.getByIdOrElseThrow(USER_ID)).thenReturn(userEntity(USER_ID, UserRole.USER));
+        when(spotRepository.findByIdForUpdate(SPOT_ID)).thenReturn(Optional.of(spot));
+        when(spotPhotoRepository.save(any(SpotPhotoEntity.class)))
+                .thenThrow(new IllegalStateException("Database unavailable"));
+
+        assertThatThrownBy(() -> spotPhotoService.uploadPhoto(USER_ID, SPOT_ID, imageFile()))
+                .isInstanceOf(IllegalStateException.class);
+
+        assertThat(spot.getApproved()).isTrue();
+    }
+
     private MultipartFile imageFile() {
         return new MockMultipartFile(
                 "file",
@@ -366,6 +416,7 @@ class SpotPhotoServiceImplTest {
         SpotEntity spot = new SpotEntity();
         spot.setId(SPOT_ID);
         spot.setName("Central Plaza");
+        spot.setApproved(true);
         spot.setCreatedBy(userEntity(USER_ID, UserRole.USER));
         return spot;
     }

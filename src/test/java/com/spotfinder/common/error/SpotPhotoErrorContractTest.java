@@ -61,6 +61,7 @@ class SpotPhotoErrorContractTest {
         spot.setApproved(true);
         when(userReader.getByIdOrElseThrow(userId)).thenReturn(user);
         when(spotRepository.findById(spotId)).thenReturn(Optional.of(spot));
+        when(spotRepository.findByIdForUpdate(spotId)).thenReturn(Optional.of(spot));
 
         UserPrincipal principal = new UserPrincipal(userId, "user@example.com", UserRole.USER);
         SecurityContextHolder.getContext().setAuthentication(

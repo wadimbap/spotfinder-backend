@@ -12,9 +12,12 @@ import com.spotfinder.spot.entity.SpotType;
 import com.spotfinder.spot.repository.SpotRepository;
 import com.spotfinder.spot.repository.SpotSpecifications;
 import com.spotfinder.user.entity.UserEntity;
+import com.spotfinder.user.entity.UserRole;
 import com.spotfinder.user.service.UserReader;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -105,12 +108,17 @@ public class SpotService {
 
     @Transactional
     public SpotResponse updateMySpot(UUID userId, UUID spotId, UpdateSpotRequest request) {
-        userReader.getByIdOrElseThrow(userId);
+        UserEntity user = userReader.getByIdOrElseThrow(userId);
 
         SpotEntity spot = spotRepository.findByIdAndCreatedById(spotId, userId)
                 .orElseThrow(() -> new SpotNotFoundException(spotId));
 
-        applyUpdate(spot, request);
+        if (hasChanges(spot, request)) {
+            applyUpdate(spot, request);
+            if (user.getRole() == UserRole.USER) {
+                spot.setApproved(false);
+            }
+        }
 
         return spotMapper.toResponse(spot);
     }
@@ -141,7 +149,7 @@ public class SpotService {
 
     @Transactional
     public SpotResponse updateSpotForAdmin(UUID spotId, UpdateSpotRequest request) {
-        SpotEntity spot = getSpotByIdOrElseThrow(spotId);
+        SpotEntity spot = getSpotForUpdate(spotId);
         applyUpdate(spot, request);
 
         return spotMapper.toResponse(spot);
@@ -149,7 +157,7 @@ public class SpotService {
 
     @Transactional
     public SpotResponse approveSpot(UUID spotId) {
-        SpotEntity spot = getSpotByIdOrElseThrow(spotId);
+        SpotEntity spot = getSpotForUpdate(spotId);
 
         if (spot.getApproved().equals(Boolean.FALSE)) {
             spot.approve();
@@ -190,6 +198,21 @@ public class SpotService {
                         ? new HashSet<>()
                         : new HashSet<>(request.features())
         );
+    }
+
+    private boolean hasChanges(SpotEntity spot, UpdateSpotRequest request) {
+        Set<SpotFeature> features = request.features() == null ? Set.of() : request.features();
+        return !Objects.equals(spot.getName(), request.name().trim())
+                || !Objects.equals(spot.getDescription(), request.description())
+                || !Objects.equals(spot.getLatitude(), request.latitude())
+                || !Objects.equals(spot.getLongitude(), request.longitude())
+                || spot.getType() != request.type()
+                || !Objects.equals(spot.getFeatures(), features);
+    }
+
+    private SpotEntity getSpotForUpdate(UUID spotId) {
+        return spotRepository.findByIdForUpdate(spotId)
+                .orElseThrow(() -> new SpotNotFoundException(spotId));
     }
 
     private boolean hasFilters(

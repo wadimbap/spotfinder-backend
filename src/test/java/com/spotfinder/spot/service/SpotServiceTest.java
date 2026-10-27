@@ -30,6 +30,9 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -357,7 +360,7 @@ class SpotServiceTest {
         SpotEntity spot = spotEntity(false);
         SpotResponse expectedResponse = spotResponse(true);
 
-        when(spotRepository.findById(SPOT_ID)).thenReturn(Optional.of(spot));
+        when(spotRepository.findByIdForUpdate(SPOT_ID)).thenReturn(Optional.of(spot));
         when(spotMapper.toResponse(spot)).thenReturn(expectedResponse);
 
         SpotResponse actualResponse = spotService.approveSpot(SPOT_ID);
@@ -365,7 +368,7 @@ class SpotServiceTest {
         assertThat(actualResponse).isEqualTo(expectedResponse);
         assertThat(spot.getApproved()).isTrue();
 
-        verify(spotRepository).findById(SPOT_ID);
+        verify(spotRepository).findByIdForUpdate(SPOT_ID);
         verify(spotMapper).toResponse(spot);
     }
 
@@ -374,7 +377,7 @@ class SpotServiceTest {
         SpotEntity spot = spotEntity(true);
         SpotResponse expectedResponse = spotResponse(true);
 
-        when(spotRepository.findById(SPOT_ID)).thenReturn(Optional.of(spot));
+        when(spotRepository.findByIdForUpdate(SPOT_ID)).thenReturn(Optional.of(spot));
         when(spotMapper.toResponse(spot)).thenReturn(expectedResponse);
 
         SpotResponse actualResponse = spotService.approveSpot(SPOT_ID);
@@ -382,19 +385,19 @@ class SpotServiceTest {
         assertThat(actualResponse).isEqualTo(expectedResponse);
         assertThat(spot.getApproved()).isTrue();
 
-        verify(spotRepository).findById(SPOT_ID);
+        verify(spotRepository).findByIdForUpdate(SPOT_ID);
         verify(spotMapper).toResponse(spot);
     }
 
     @Test
     void approveSpot_shouldThrowExceptionWhenSpotNotFound() {
-        when(spotRepository.findById(SPOT_ID)).thenReturn(Optional.empty());
+        when(spotRepository.findByIdForUpdate(SPOT_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> spotService.approveSpot(SPOT_ID))
                 .isInstanceOf(SpotNotFoundException.class)
                 .hasMessageContaining(SPOT_ID.toString());
 
-        verify(spotRepository).findById(SPOT_ID);
+        verify(spotRepository).findByIdForUpdate(SPOT_ID);
         verify(spotMapper, never()).toResponse(any(SpotEntity.class));
     }
 
@@ -529,19 +532,19 @@ class SpotServiceTest {
     }
 
     @Test
-    void updateMySpot_shouldUpdateOwnApprovedSpotWithoutChangingApproval() {
+    void updateMySpot_shouldReturnApprovedSpotToModeration() {
         SpotEntity spot = spotEntity(true);
         UpdateSpotRequest request = updateSpotRequest();
 
         when(userReader.getByIdOrElseThrow(USER_ID)).thenReturn(userEntity());
         when(spotRepository.findByIdAndCreatedById(SPOT_ID, USER_ID)).thenReturn(Optional.of(spot));
 
-        when(spotMapper.toResponse(spot)).thenReturn(spotResponse(true));
+        when(spotMapper.toResponse(spot)).thenReturn(spotResponse(false));
 
         SpotResponse actualResponse = spotService.updateMySpot(USER_ID, SPOT_ID, request);
 
-        assertThat(actualResponse.approved()).isTrue();
-        assertThat(spot.getApproved()).isTrue();
+        assertThat(actualResponse.approved()).isFalse();
+        assertThat(spot.getApproved()).isFalse();
         assertThat(spot.getName()).isEqualTo("Updated Spot");
 
         verify(userReader).getByIdOrElseThrow(USER_ID);
@@ -556,7 +559,7 @@ class SpotServiceTest {
         UpdateSpotRequest request = updateSpotRequest();
         SpotResponse expectedResponse = spotResponse(true);
 
-        when(spotRepository.findById(SPOT_ID)).thenReturn(Optional.of(spot));
+        when(spotRepository.findByIdForUpdate(SPOT_ID)).thenReturn(Optional.of(spot));
         when(spotMapper.toResponse(spot)).thenReturn(expectedResponse);
 
         SpotResponse actualResponse = spotService.updateSpotForAdmin(SPOT_ID, request);
@@ -571,8 +574,56 @@ class SpotServiceTest {
         assertThat(spot.getApproved()).isTrue();
         assertThat(spot.getCreatedBy()).isSameAs(creator);
 
-        verify(spotRepository).findById(SPOT_ID);
+        verify(spotRepository).findByIdForUpdate(SPOT_ID);
         verify(spotMapper).toResponse(spot);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"name", "description", "latitude", "longitude", "type", "features"})
+    void updateMySpot_shouldRequireModerationForEveryChangedField(String field) {
+        SpotEntity spot = spotEntity(true);
+        UpdateSpotRequest request = new UpdateSpotRequest(
+                field.equals("name") ? "Changed name" : spot.getName(),
+                field.equals("description") ? "Changed description" : spot.getDescription(),
+                field.equals("latitude") ? 50.0 : spot.getLatitude(),
+                field.equals("longitude") ? 40.0 : spot.getLongitude(),
+                field.equals("type") ? SpotType.SKATEPARK : spot.getType(),
+                field.equals("features") ? Set.of(SpotFeature.RAIL) : spot.getFeatures());
+        when(userReader.getByIdOrElseThrow(USER_ID)).thenReturn(userEntity());
+        when(spotRepository.findByIdAndCreatedById(SPOT_ID, USER_ID)).thenReturn(Optional.of(spot));
+
+        spotService.updateMySpot(USER_ID, SPOT_ID, request);
+
+        assertThat(spot.getApproved()).isFalse();
+    }
+
+    @Test
+    void updateMySpot_shouldKeepApprovalWhenNothingChanged() {
+        SpotEntity spot = spotEntity(true);
+        UpdateSpotRequest request = new UpdateSpotRequest(
+                "  " + spot.getName() + "  ", spot.getDescription(), spot.getLatitude(),
+                spot.getLongitude(), spot.getType(), Set.copyOf(spot.getFeatures()));
+        when(userReader.getByIdOrElseThrow(USER_ID)).thenReturn(userEntity());
+        when(spotRepository.findByIdAndCreatedById(SPOT_ID, USER_ID)).thenReturn(Optional.of(spot));
+
+        spotService.updateMySpot(USER_ID, SPOT_ID, request);
+
+        assertThat(spot.getApproved()).isTrue();
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = UserRole.class, names = {"MODERATOR", "ADMIN"})
+    void updateMySpot_shouldPreserveApprovalForPrivilegedOwner(UserRole role) {
+        SpotEntity spot = spotEntity(true);
+        UserEntity user = userEntity();
+        user.setRole(role);
+        when(userReader.getByIdOrElseThrow(USER_ID)).thenReturn(user);
+        when(spotRepository.findByIdAndCreatedById(SPOT_ID, USER_ID)).thenReturn(Optional.of(spot));
+
+        spotService.updateMySpot(USER_ID, SPOT_ID, updateSpotRequest());
+
+        assertThat(spot.getApproved()).isTrue();
+        assertThat(spot.getName()).isEqualTo("Updated Spot");
     }
 
     private CreateSpotRequest createSpotRequest() {

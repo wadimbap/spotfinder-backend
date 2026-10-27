@@ -21,6 +21,7 @@ public interface SpotRepository extends JpaRepository<SpotEntity, UUID>, JpaSpec
 
     List<SpotEntity> findAllByCreatedByIdOrderByCreatedAtDesc(UUID userId);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<SpotEntity> findByIdAndCreatedById(UUID spotId, UUID userId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)

@@ -51,7 +51,8 @@ public class SpotPhotoServiceImpl implements SpotPhotoService {
     @Transactional
     public SpotPhotoResponse uploadPhoto(UUID userId, UUID spotId, MultipartFile file) {
         UserEntity user = userReader.getByIdOrElseThrow(userId);
-        SpotEntity spot = getSpotByIdOrElseThrow(spotId);
+        SpotEntity spot = spotRepository.findByIdForUpdate(spotId)
+                .orElseThrow(() -> new SpotNotFoundException(spotId));
 
         if (spot.getCreatedBy() == null || !spot.getCreatedBy().getId().equals(userId)) {
             throw new AccessDeniedException("Only the spot owner can upload photos");
@@ -82,6 +83,10 @@ public class SpotPhotoServiceImpl implements SpotPhotoService {
         photo.setCreatedBy(user);
 
         SpotPhotoEntity savedPhoto = spotPhotoRepository.save(photo);
+
+        if (user.getRole() == UserRole.USER) {
+            spot.setApproved(false);
+        }
 
         return spotPhotoMapper.toResponse(savedPhoto);
     }

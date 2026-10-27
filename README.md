@@ -131,6 +131,15 @@ Role-based access is used for moderation:
 
 ## Spot Domain
 
+When a regular owner changes a spot's content or successfully uploads a photo, the
+entire spot returns to Pending. It disappears from the shared map until approved
+again. Existing photos and comments are retained; while Pending they remain
+accessible to the owner, moderators and administrators. Saving unchanged content
+or a failed upload does not revoke approval. Moderator and administrator edits
+and their own photo uploads preserve the current approval state. Uploads remain
+owner-only for every role. Content changes, uploads and approval serialize on the
+spot row to avoid overwriting concurrent moderation decisions.
+
 A spot has a general type and a set of features.
 
 Example spot type:
