@@ -55,7 +55,7 @@ app:
 logging:
   level:
     root: INFO
-    com.spotfinder: DEBUG
+    com.spotfinder: INFO
     org.springframework.web: INFO
     org.springframework.security: INFO
-    org.hibernate.SQL: DEBUG
+    org.hibernate.SQL: INFO
