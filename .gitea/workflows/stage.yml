@@ -27,12 +27,23 @@ jobs:
   build-and-deploy-stage:
     runs-on: ubuntu-latest
     needs: quality
+    env:
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      SPRING_DATASOURCE_USERNAME: ${{ secrets.SPRING_DATASOURCE_USERNAME }}
+      SPRING_DATASOURCE_PASSWORD: ${{ secrets.SPRING_DATASOURCE_PASSWORD }}
+      MINIO_ROOT_USER: ${{ secrets.MINIO_ROOT_USER }}
+      MINIO_ROOT_PASSWORD: ${{ secrets.MINIO_ROOT_PASSWORD }}
+      MINIO_ACCESS_KEY: ${{ secrets.MINIO_ACCESS_KEY }}
+      MINIO_SECRET_KEY: ${{ secrets.MINIO_SECRET_KEY }}
 
     steps:
       - name: Checkout
         run: |
           git clone http://gitea:3000/admin/spotfinder-backend.git .
           git checkout ${{ gitea.sha }}
+
+      - name: Validate deployment secrets before replacing containers
+        run: bash .gitea/scripts/validate-secrets.sh
 
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
@@ -53,8 +64,8 @@ jobs:
             --name spotfinder-stage-minio \
             --restart unless-stopped \
             --network spotfinder-stage-net \
-            -e MINIO_ROOT_USER=admin \
-            -e MINIO_ROOT_PASSWORD=adminadmin \
+            -e MINIO_ROOT_USER \
+            -e MINIO_ROOT_PASSWORD \
             -v spotfinder-stage-minio-data:/data \
             minio/minio:latest server /data --console-address ":9001"
 
@@ -84,17 +95,19 @@ jobs:
             --restart unless-stopped \
             --network spotfinder-stage-net \
             -e SPRING_DATASOURCE_URL=jdbc:postgresql://spotfinder-stage-postgres:5432/spotfinder_stage \
-            -e SPRING_DATASOURCE_USERNAME=admin \
-            -e SPRING_DATASOURCE_PASSWORD=admin \
+            -e SPRING_DATASOURCE_USERNAME \
+            -e SPRING_DATASOURCE_PASSWORD \
+            -e JWT_SECRET \
+            -e SPRING_PROFILES_ACTIVE=prod \
             -e SERVER_PORT=8080 \
             -e JWT_EXPIRATION_MINUTES=15 \
             -e AUTH_COOKIE_SECURE=true \
             -e AUTH_ALLOWED_ORIGINS=https://stage.deployflow.ru,https://stage-api.deployflow.ru \
             -e MINIO_ENDPOINT=http://spotfinder-stage-minio:9000 \
-            -e MINIO_ACCESS_KEY=admin \
-            -e MINIO_SECRET_KEY=adminadmin \
+            -e MINIO_ACCESS_KEY \
+            -e MINIO_SECRET_KEY \
             -e MINIO_BUCKET=spotfinder-stage \
-            -e MINIO_INITIALIZE_BUCKET=true \
+            -e MINIO_INITIALIZE_BUCKET=false \
             spotfinder-backend:stage
 
       - name: Check stage health

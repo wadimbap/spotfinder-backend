@@ -189,6 +189,16 @@ Example create spot request:
 
 ## Local Development
 
+The default configuration requires explicit JWT, database and MinIO credentials and
+refuses to start with missing or standard credentials. For the local Compose
+services, explicitly run `./gradlew bootRun --args='--spring.profiles.active=local'`
+(Windows: `.\gradlew.bat bootRun --args='--spring.profiles.active=local'`). Tests use
+separate non-production settings and do not require deployment secrets.
+
+See [deployment secrets and the deferred infrastructure transition](docs/deployment-secrets.md)
+for the required Gitea Secrets, validation rules and steps to complete before
+pushing the new deployment workflow. Server credential rotation is a separate action.
+
 ### Requirements
 
 - Java 21

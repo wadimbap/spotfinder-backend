@@ -1,0 +1,19 @@
+# Explicit opt-in for the local docker-compose.yml services. Never deploy this profile.
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/spotfinder}
+    username: ${SPRING_DATASOURCE_USERNAME:admin}
+    password: ${SPRING_DATASOURCE_PASSWORD:admin}
+
+storage:
+  minio:
+    endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+    access-key: ${MINIO_ACCESS_KEY:admin}
+    secret-key: ${MINIO_SECRET_KEY:adminadmin}
+    bucket: ${MINIO_BUCKET:spotfinder-local}
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:local-only-jwt-key-never-use-outside-local-development}
+  auth:
+    cookie-secure: ${AUTH_COOKIE_SECURE:false}

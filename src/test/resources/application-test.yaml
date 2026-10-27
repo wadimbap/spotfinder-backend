@@ -1,0 +1,26 @@
+# Fixed, non-production fixtures. Testcontainers supplies the actual PostgreSQL connection.
+spring:
+  application:
+    name: spotfinder-backend-test
+  datasource:
+    url: jdbc:postgresql://localhost:5433/spotfinder_test
+    username: test-user
+    password: test-only-database-password
+  docker:
+    compose:
+      enabled: false
+
+storage:
+  minio:
+    endpoint: http://localhost:9000
+    access-key: test-application
+    secret-key: test-only-storage-password
+    bucket: spotfinder-test
+    initialize-bucket: false
+
+app:
+  jwt:
+    secret: test-only-jwt-key-for-automated-tests-never-deploy
+
+server:
+  port: 0
