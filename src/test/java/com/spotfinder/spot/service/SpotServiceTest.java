@@ -18,6 +18,7 @@ import com.spotfinder.spot.entity.SpotFeature;
 import com.spotfinder.spot.entity.SpotType;
 import com.spotfinder.spot.repository.SpotRepository;
 import com.spotfinder.spot.service.impl.SpotService;
+import com.spotfinder.spot.state.SpotWorkflow;
 import com.spotfinder.user.entity.UserEntity;
 import com.spotfinder.user.entity.UserRole;
 import com.spotfinder.user.service.UserReader;
@@ -54,7 +55,7 @@ class SpotServiceTest {
 
     @BeforeEach
     void setUp() {
-        spotService = new SpotService(userReader, spotRepository, spotMapper);
+        spotService = new SpotService(userReader, spotRepository, spotMapper, new SpotWorkflow());
     }
 
     @Test

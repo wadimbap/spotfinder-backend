@@ -11,6 +11,7 @@ import com.spotfinder.spot.entity.SpotFeature;
 import com.spotfinder.spot.entity.SpotType;
 import com.spotfinder.spot.repository.SpotRepository;
 import com.spotfinder.spot.repository.SpotSpecifications;
+import com.spotfinder.spot.state.SpotWorkflow;
 import com.spotfinder.user.entity.UserEntity;
 import com.spotfinder.user.entity.UserRole;
 import com.spotfinder.user.service.UserReader;
@@ -30,6 +31,7 @@ public class SpotService {
     private final UserReader userReader;
     private final SpotRepository spotRepository;
     private final SpotMapper spotMapper;
+    private final SpotWorkflow spotWorkflow;
 
     @Transactional
     public SpotResponse createSpot(UUID userId, CreateSpotRequest request) {
@@ -159,9 +161,7 @@ public class SpotService {
     public SpotResponse approveSpot(UUID spotId) {
         SpotEntity spot = getSpotForUpdate(spotId);
 
-        if (spot.getApproved().equals(Boolean.FALSE)) {
-            spot.approve();
-        }
+        spotWorkflow.approve(spot);
 
         return spotMapper.toResponse(spot);
     }

@@ -60,8 +60,4 @@ public class SpotEntity extends BaseUuidEntity {
 
     @OneToMany(mappedBy = "spot", fetch = FetchType.LAZY)
     private List<CommentEntity> comments;
-
-    public void approve() {
-        this.approved = Boolean.TRUE;
-    }
 }
