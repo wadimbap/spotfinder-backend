@@ -19,6 +19,7 @@ import com.spotfinder.common.exception.CommentOwnershipException;
 import com.spotfinder.common.exception.InvalidCommentParentException;
 import com.spotfinder.common.exception.SpotNotFoundException;
 import com.spotfinder.spot.entity.SpotEntity;
+import com.spotfinder.spot.policy.ContentAccessPolicy;
 import com.spotfinder.spot.service.impl.SpotReader;
 import com.spotfinder.user.entity.UserEntity;
 import com.spotfinder.user.entity.UserRole;
@@ -62,7 +63,8 @@ class CommentServiceTest {
 
     @BeforeEach
     void setUp() {
-        commentService = new CommentService(userReader, spotReader, commentRepository, commentMapper);
+        commentService = new CommentService(
+                userReader, spotReader, commentRepository, commentMapper, new ContentAccessPolicy());
     }
 
     @Test

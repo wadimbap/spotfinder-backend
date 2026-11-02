@@ -20,6 +20,7 @@ import com.spotfinder.spot.dto.SpotPhotoResponse;
 import com.spotfinder.spot.dto.mapper.SpotPhotoMapper;
 import com.spotfinder.spot.entity.SpotEntity;
 import com.spotfinder.spot.entity.SpotPhotoEntity;
+import com.spotfinder.spot.policy.ContentAccessPolicy;
 import com.spotfinder.spot.repository.SpotPhotoRepository;
 import com.spotfinder.spot.repository.SpotRepository;
 import com.spotfinder.storage.service.ObjectStorageService;
@@ -79,7 +80,8 @@ class SpotPhotoServiceImplTest {
                 spotRepository,
                 spotPhotoRepository,
                 spotPhotoMapper,
-                objectStorageService
+                objectStorageService,
+                new ContentAccessPolicy()
         );
     }
 

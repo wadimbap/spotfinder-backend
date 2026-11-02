@@ -10,6 +10,7 @@ import com.spotfinder.spot.dto.SpotPhotoResponse;
 import com.spotfinder.spot.dto.mapper.SpotPhotoMapper;
 import com.spotfinder.spot.entity.SpotEntity;
 import com.spotfinder.spot.entity.SpotPhotoEntity;
+import com.spotfinder.spot.policy.ContentAccessPolicy;
 import com.spotfinder.spot.repository.SpotPhotoRepository;
 import com.spotfinder.spot.repository.SpotRepository;
 import com.spotfinder.spot.service.SpotPhotoService;
@@ -46,6 +47,7 @@ public class SpotPhotoServiceImpl implements SpotPhotoService {
     private final SpotPhotoRepository spotPhotoRepository;
     private final SpotPhotoMapper spotPhotoMapper;
     private final ObjectStorageService objectStorageService;
+    private final ContentAccessPolicy contentAccessPolicy;
 
     @Override
     @Transactional
@@ -97,7 +99,7 @@ public class SpotPhotoServiceImpl implements SpotPhotoService {
         UserEntity user = userReader.getByIdOrElseThrow(userId);
         SpotEntity spot = getSpotByIdOrElseThrow(spotId);
 
-        ensureCanViewPhotos(user, spot);
+        contentAccessPolicy.ensureCanAccessContent(user, spot);
 
         return spotPhotoRepository.findAllBySpotIdOrderByCreatedAtAsc(spotId)
                 .stream()
@@ -111,7 +113,7 @@ public class SpotPhotoServiceImpl implements SpotPhotoService {
         UserEntity user = userReader.getByIdOrElseThrow(userId);
         SpotEntity spot = getSpotByIdOrElseThrow(spotId);
 
-        ensureCanViewPhotos(user, spot);
+        contentAccessPolicy.ensureCanAccessContent(user, spot);
 
         SpotPhotoEntity photo = getPhotoByIdAndSpotIdOrElseThrow(photoId, spotId);
         InputStream inputStream = objectStorageService.download(photo.getObjectKey());
@@ -122,20 +124,6 @@ public class SpotPhotoServiceImpl implements SpotPhotoService {
                 photo.getContentType(),
                 photo.getSizeBytes()
         );
-    }
-
-    private void ensureCanViewPhotos(UserEntity user, SpotEntity spot) {
-        boolean owner = spot.getCreatedBy() != null
-                && user.getId().equals(spot.getCreatedBy().getId());
-
-        boolean allowed = Boolean.TRUE.equals(spot.getApproved())
-                || owner
-                || user.getRole() == UserRole.MODERATOR
-                || user.getRole() == UserRole.ADMIN;
-
-        if (!allowed) {
-            throw new SpotNotFoundException(spot.getId());
-        }
     }
 
     @Override

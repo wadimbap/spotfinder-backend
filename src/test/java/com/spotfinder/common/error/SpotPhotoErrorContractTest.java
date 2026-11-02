@@ -16,6 +16,7 @@ import com.spotfinder.spot.controller.SpotPhotoController;
 import com.spotfinder.spot.dto.mapper.SpotPhotoMapper;
 import com.spotfinder.spot.entity.SpotEntity;
 import com.spotfinder.spot.entity.SpotPhotoEntity;
+import com.spotfinder.spot.policy.ContentAccessPolicy;
 import com.spotfinder.spot.repository.SpotPhotoRepository;
 import com.spotfinder.spot.repository.SpotRepository;
 import com.spotfinder.storage.service.ObjectStorageService;
@@ -68,7 +69,7 @@ class SpotPhotoErrorContractTest {
                 new UsernamePasswordAuthenticationToken(principal, null)
         );
         SpotPhotoServiceImpl service = new SpotPhotoServiceImpl(
-                userReader, spotRepository, photoRepository, mapper, storage
+                userReader, spotRepository, photoRepository, mapper, storage, new ContentAccessPolicy()
         );
         mockMvc = MockMvcBuilders.standaloneSetup(new SpotPhotoController(service), new MultipartLimitController())
                 .setControllerAdvice(new GlobalExceptionHandler())
